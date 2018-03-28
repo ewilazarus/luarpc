@@ -1,7 +1,9 @@
 local lu = require('luaunit')
 local luarpc = require('luarpc')
 
-print('TEST: parsing')
+print('TEST: interface parsing')
+
+local interfaceHandler = luarpc._interfaceHandler
 
 local expectedGivenISpecProspect = {
     name = 'minhaInt',
@@ -20,32 +22,32 @@ local expectedGivenISpecProspect = {
     }
 
 function test_canParse()
-    local givenISpecProspect = luarpc:_parse('resources/given.ifile')
+    local givenISpecProspect = interfaceHandler:_parse('resources/given.ifile')
     lu.assertEquals(givenISpecProspect, expectedGivenISpecProspect)
 end
 
 function test_cantParseNonExistentFile()
     lu.assertError(function()
-        luarpc:_parse('resources/nonexistent.ifile')
+        interfaceHandler:_parse('resources/nonexistent.ifile')
     end)
 end
 
 function test_cantParseEmptyFile()
     lu.assertError(function()
-        luarpc:_parse('resources/empty.ifile')
+        interfaceHandler:_parse('resources/empty.ifile')
     end)
 end
 
 function test_cantParseBadSyntaxFile()
     lu.assertError(function()
-        luarpc:_parse('resources/badsyntax.ifile')
+        interfaceHandler:_parse('resources/badsyntax.ifile')
     end)
 end
 
 function test_cantParseMaliciousSyntaxFile()
     lu.assertError(function()
-        luarpc:_parse('resources/malicioussyntax.ifile')
+        interfaceHandler:_parse('resources/malicioussyntax.ifile')
     end)
 end
 
-lu.LuaUnit.run('--name', './tests/parsing')
+lu.LuaUnit.run('--name', './tests/interface/parsing')

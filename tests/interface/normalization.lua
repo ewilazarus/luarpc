@@ -1,12 +1,14 @@
 local lu = require('luaunit')
 local luarpc = require('luarpc')
 
-print('TEST: normalization')
+print('TEST: interface normalization')
+
+local interfaceHandler = luarpc._interfaceHandler
 
 local expectedNormalizedISpec = { name = 'minhaInt', methods = { foo = { resulttype = 'double', args = {} } } }
 
 local function parseValidateAndNormalize(ifile)
-    return luarpc:_normalize(luarpc:_validate(luarpc:_parse(ifile)))
+    return interfaceHandler:_normalize(interfaceHandler:_validate(interfaceHandler:_parse(ifile)))
 end
 
 
@@ -15,4 +17,4 @@ function test_canNormalizeMissingMethodArgs()
 end
 
 
-lu.LuaUnit.run('--name', './tests/normalization')
+lu.LuaUnit.run('--name', './tests/interface/normalization')

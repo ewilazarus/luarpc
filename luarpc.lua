@@ -1,27 +1,24 @@
---------------------
--- Error messages --
---------------------
-errorMessages = {
-    IFLPAR01 = 'The provided interface file is either missing or syntatically invalid',
-    ISPVAL01 = 'The provided interface must define a "[name]" attribute',
-    ISPVAL02 = 'The provided interface "[name]" value must be of type "string"',
-    ISPVAL03 = 'The provided interface must define a "[methods]" attribute',
-    ISPVAL04 = 'The provided interface "[methods]" value must be of type "table"',
-    ISPVAL05 = 'The provided interface "[methods]" value must define at least one "[method]"',
-    ISPVAL06 = 'The provided interface has a "[methods].[method]" without a "resulttype" attribute',
-    ISPVAL07 = 'The provided interface has a "[methods].[method].[resulttype]" value that is not of type "string"',
-    ISPVAL08 = 'The provided interface has a "[methods].[method].[resulttype]" value that is neither \'void\', \'char\', \'string\' nor \'double\'',
-    ISPVAL09 = 'The provided interface has a "[methods].[method].[args].[arg]" value that does not define a "[direction]"',
-    ISPVAL10 = 'The provided interface has a "[methods].[method].[args].[arg].[direction]" value that is not of type "string"',
-    ISPVAL11 = 'The provided interface has a "[methods].[method].[args].[arg].[direction]" value that is neither \'in\', \'out\' nor \'inout\'',
-    ISPVAL12 = 'The provided interface has a "[methods].[method].[args].[arg]" value that does not define a "[type]"',
-    ISPVAL13 = 'The provided interface has a "[methods].[method].[args].[arg].[type]" value that is not of type "string"',
-    ISPVAL14 = 'The provided interface has a "[methods].[method].[args].[arg].[type]" value that is neither \'char\', \'string\' nor \'double\'',
+------------------------------------------------------ ERRORS ---------------------------------------------------------
+errors = {
+    I01 = 'The provided interface file is either missing or syntatically invalid',
+    I02 = 'The provided interface does not have a "name" attribute',
+    I03 = 'The provided interface "name" attribute whose value is not of type "string"',
+    I04 = 'The provided interface does not have a "methods" attribute',
+    I05 = 'The provided interface "methods" attribute whose value is not of type "table"',
+    I06 = 'The provided interface "methods" attribute whose value must define at least one method',
+    I07 = 'The provided interface has a method without a "resulttype" attribute',
+    I08 = 'The provided interface has a "resulttype" attribute value that is not of type "string"',
+    I09 = 'The provided interface has a "resulttype" attribute value that is neither \'void\', \'char\', \'string\' nor \'double\'',
+    I10 = 'The provided interface has an "args" attribute whose value does not define a "direction" attribute',
+    I11 = 'The provided interface has a "direction" attribute whose value is not of type "string"',
+    I12 = 'The provided interface has a "direction" attribute whose value is neither \'in\', \'out\' nor \'inout\'',
+    I13 = 'The provided interface has an "args" attribute whose value does not define a "type" attribute',
+    I14 = 'The provided interface has a "type" attribute whose value is not of type "string"',
+    I15 = 'The provided interface has a "type" attribute whose value is neither \'char\', \'string\' nor \'double\''
 }
 
--------------
--- Helpers --
--------------
+
+----------------------------------------------------- HELPERS ---------------------------------------------------------
 local function istype(t)
     return function(value)
         return type(value) == t
@@ -43,115 +40,102 @@ local function hasvalue(array)
 end
 
 
--- ifile parsing
-local ispecProspectMemoizer
-
+---------------------------------------------------- INTERFACE --------------------------------------------------------
+local prospectMemoizer
 function interface(value)
-    ispecProspectMemoizer = value
+    prospectMemoizer = value
 end
 
-local function parse(ifile)
-    ispecProspectMemoizer = nil
-    dofile(ifile)
-    assert(istable(ispecProspectMemoizer), errorMessages.IFLPAR01)
-    return ispecProspectMemoizer
-end
+local InterfaceHandler = {}
 
-
--- ispecProspect validation
-local function validateName(ispecProspect)
-    assert(ispecProspect.name, errorMessages.ISPVAL01)
-    assert(isstring(ispecProspect.name), errorMessages.ISPVAL02)
-end
-
-local isvalidresulttype = hasvalue({'void', 'char', 'string', 'double'})
-
-local function validateMethodResultType(method)
-    assert(method.resulttype, errorMessages.ISPVAL06)
-    assert(isstring(method.resulttype), errorMessages.ISPVAL07)
-    assert(isvalidresulttype(method.resulttype), errorMessages.ISPVAL08)
-end
-
-local isvalidargdirection = hasvalue({'in', 'out', 'inout'})
-local isvalidargtype = hasvalue({'char', 'string', 'double'})
-
-local function validateMethodArg(arg)
-    assert(arg.direction, errorMessages.ISPVAL09)
-    assert(isstring(arg.direction), errorMessages.ISPVAL10)
-    assert(isvalidargdirection(arg.direction), errorMessages.ISPVAL11)
-    assert(arg.type, errorMessages.ISPVAL12)
-    assert(isstring(arg.type), errorMessages.ISPVAL13)
-    assert(isvalidargtype(arg.type), errorMessages.ISPVAL14)
-end
-
-local function validateMethodArgs(method)
-    if method.args then
-        for _, arg in pairs(method.args) do
-            validateMethodArg(arg)
-        end
-    end
-end
-
-local function validateMethod(method)
-    validateMethodResultType(method)
-    validateMethodArgs(method)
-end
-
-local function validateMethods(ispecProspect)
-    assert(ispecProspect.methods, errorMessages.ISPVAL03)
-    assert(istable(ispecProspect.methods), errorMessages.ISPVAL04)
-    local methodCount = 0
-    for _, method in pairs(ispecProspect.methods) do
-        validateMethod(method)
-        methodCount = methodCount + 1
-    end
-    assert(methodCount > 0, errorMessages.ISPVAL05)
-end
-
-
--- ispecProspect normalization
-local function normalizeMissingMethodArgs(ispecProspect)
-    for _, definition in pairs(ispecProspect.methods) do
+function InterfaceHandler:_normalize(prospect)
+    for _, definition in pairs(prospect.methods) do
         if definition.args == nil then
             definition.args = {}
         end
     end
+    return prospect
+end
+
+InterfaceHandler._isvalidargtype = hasvalue({'char', 'string', 'double'})
+InterfaceHandler._isvalidargdirection = hasvalue({'in', 'out', 'inout'})
+
+function InterfaceHandler:_validateMethodArg(arg)
+    assert(arg.direction, errors.I10)
+    assert(isstring(arg.direction), errors.I11)
+    assert(self._isvalidargdirection(arg.direction), errors.I12)
+    assert(arg.type, errors.I13)
+    assert(isstring(arg.type), errors.I14)
+    assert(self._isvalidargtype(arg.type), errors.I15)
+end
+
+function InterfaceHandler:_validateMethodArgs(method)
+    if method.args then
+        for _, arg in pairs(method.args) do
+            self:_validateMethodArg(arg)
+        end
+    end
+end
+
+InterfaceHandler._isvalidresulttype = hasvalue({'void', 'char', 'string', 'double'})
+
+function InterfaceHandler:_validateMethodResultType(method)
+    assert(method.resulttype, errors.I07)
+    assert(isstring(method.resulttype), errors.I08)
+    assert(self._isvalidresulttype(method.resulttype), errors.I09)
+end
+
+function InterfaceHandler:_validateMethod(method)
+    self:_validateMethodResultType(method)
+    self:_validateMethodArgs(method)
+end
+
+function InterfaceHandler:_validateMethods(prospect)
+    assert(prospect.methods, errors.I04)
+    assert(istable(prospect.methods), errors.I05)
+    local methodCount = 0
+    for _, method in pairs(prospect.methods) do
+        methodCount = methodCount + 1
+        self:_validateMethod(method)
+    end
+    assert(methodCount > 0, errors.I06)
+end
+
+function InterfaceHandler:_validateName(prospect)
+    assert(prospect.name, errors.I02)
+    assert(isstring(prospect.name), errors.I03)
+end
+
+function InterfaceHandler:_validate(prospect)
+    self:_validateName(prospect)
+    self:_validateMethods(prospect)
+    return prospect
+end
+
+function InterfaceHandler:_parse(file)
+    prospectMemoizer = nil
+    dofile(file)
+    assert(istable(prospectMemoizer), errors.I01)
+    return prospectMemoizer
+end
+
+function InterfaceHandler:consume(file)
+    return self:_normalize(self:_validate(self:_parse(file)))
 end
 
 
---------------------------------- EXPOSED -------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------- EXPOSED ---------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
 local LuaRPC = {}
 
--------------------------------
--- "Private" functionalities --
--------------------------------
-function LuaRPC:_parse(ifile)
-    return parse(ifile)
-end
+LuaRPC._interfaceHandler = InterfaceHandler
 
-function LuaRPC:_validate(ispecProspect)
-    validateName(ispecProspect)
-    validateMethods(ispecProspect)
-    return ispecProspect
-end
-
-function LuaRPC:_normalize(ispecProspect)
-    normalizeMissingMethodArgs(ispecProspect)
-    return ispecProspect
-end
-
-function LuaRPC:_consume(ifile)
-    return self._normalize(self._validate(self._parse(ifile)))
-end
-
-------------------------------
--- "Public" functionalities --
-------------------------------
-function LuaRPC:createProxy(ip, port, ifile)
+function LuaRPC:createProxy(ip, port, file)
     -- TODO: Implement
 end
 
-function LuaRPC:createServant(idef, ifile)
+function LuaRPC:createServant(idef, file)
     -- TODO: Implement
 end
 
