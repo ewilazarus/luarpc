@@ -1,0 +1,5 @@
+interface { name = 'minhaInt',
+            methods = {
+                foo = { resulttype = 'double' }
+            }
+}

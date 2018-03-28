@@ -1,0 +1,10 @@
+interface { name = 'minhaInt',
+            methods = {
+                foo = { resulttype = 32,
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                    { direction = 'out', type = 'string' }
+                }}
+                }
+            }
