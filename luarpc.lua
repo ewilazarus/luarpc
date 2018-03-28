@@ -22,15 +22,22 @@ local function hasvalue(array)
 end
 
 
--- Parsing
+-- ifile parsing
 local ispecProspectMemoizer
 
 function interface(value)
     ispecProspectMemoizer = value
 end
 
+local function parse(ifile)
+    ispecProspectMemoizer = nil
+    dofile(ifile)
+    assert(istable(ispecProspectMemoizer), 'The file "' .. ifile .. '" is either missing or syntatically invalid')
+    return ispecProspectMemoizer
+end
 
--- Validation
+
+-- ispecProspect validation
 local function validateName(ispecProspect)
     assert(ispecProspect.name, 'The provided interface must have a name')
     assert(isstring(ispecProspect.name), 'The provided interface name must be a string')
@@ -81,7 +88,7 @@ local function validateMethods(ispecProspect)
 end
 
 
--- Normalization
+-- ispecProspect normalization
 local function normalizeMissingMethodArgs(ispecProspect)
     for _, definition in pairs(ispecProspect.methods) do
         if definition.args == nil then
@@ -98,10 +105,7 @@ local LuaRPC = {}
 -- "Private" functionalities --
 -------------------------------
 function LuaRPC:_parse(ifile)
-    ispecProspectMemoizer = nil
-    dofile(ifile)
-    assert(istable(ispecProspectMemoizer), 'The file "' .. ifile .. '" is either missing or syntatically invalid')
-    return ispecProspectMemoizer
+    return parse(ifile)
 end
 
 function LuaRPC:_validate(ispecProspect)
@@ -113,6 +117,10 @@ end
 function LuaRPC:_normalize(ispecProspect)
     normalizeMissingMethodArgs(ispecProspect)
     return ispecProspect
+end
+
+function LuaRPC:_consume(ifile)
+    return self._normalize(self._validate(self._parse(ifile)))
 end
 
 ------------------------------
