@@ -1,5 +1,5 @@
 local lu = require('luaunit')
-local parse = require('parse')
+local luarpc = require('luarpc')
 
 local expectedGivenISpec = {
     name = 'minhaInt',
@@ -18,20 +18,26 @@ local expectedGivenISpec = {
     }
 
 function test_canParse()
-    local givenISpec = parse('resources/given.ifile')
+    local givenISpec = luarpc:_parse('resources/given.ifile')
     lu.assertEquals(givenISpec, expectedGivenISpec)
 end
 
 function test_cantParseNonExistentFile()
-    lu.assertError(parse, 'resource/nonexistent.ifile')
+    lu.assertError(function()
+        luarpc:_parse('resources/nonexistent.ifile')
+    end)
 end
 
 function test_cantParseEmptyFile()
-    lu.assertError(parse, 'resource/empty.ifile')
+    lu.assertError(function()
+        luarpc:_parse('resources/empty.ifile')
+    end)
 end
 
-function test_cantParseBadComposedFile()
-    lu.assertError(parse, 'resource/badcomposed.ifile')
+function test_cantParseBadSyntaxFile()
+    lu.assertError(function()
+        luarpc:_parse('resources/badsyntax.ifile')
+    end)
 end
 
-print(lu.LuaUnit.run('--name', './tests/parse'))
+print(lu.LuaUnit.run('--name', './tests/parsing'))
