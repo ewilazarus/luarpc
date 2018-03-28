@@ -80,6 +80,17 @@ local function validateMethods(ispecProspect)
     assert(methodCount > 0, 'The provided interface methods must have at least one definition')
 end
 
+
+-- Normalization
+local function normalizeMissingMethodArgs(ispecProspect)
+    for _, definition in pairs(ispecProspect.methods) do
+        if definition.args == nil then
+            definition.args = {}
+        end
+    end
+end
+
+
 --------------------------------- EXPOSED -------------------------------------
 local LuaRPC = {}
 
@@ -89,14 +100,18 @@ local LuaRPC = {}
 function LuaRPC:_parse(ifile)
     ispecProspectMemoizer = nil
     dofile(ifile)
-    assert(istable(ispecProspectMemoizer),
-    'The file "' .. ifile .. '" is either missing or syntatically invalid')
+    assert(istable(ispecProspectMemoizer), 'The file "' .. ifile .. '" is either missing or syntatically invalid')
     return ispecProspectMemoizer
 end
 
 function LuaRPC:_validate(ispecProspect)
     validateName(ispecProspect)
     validateMethods(ispecProspect)
+    return ispecProspect
+end
+
+function LuaRPC:_normalize(ispecProspect)
+    normalizeMissingMethodArgs(ispecProspect)
     return ispecProspect
 end
 
