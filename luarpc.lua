@@ -3,9 +3,14 @@
 -------------
 
 -- Parsing
-local ispecMemoizer
-function interface(table)
-    ispecMemoizer = table
+local ispecProspectMemoizer
+
+function interface(value)
+    ispecProspectMemoizer = value
+end
+
+local function istable(ispecProspect)
+    return type(ispecProspect) == 'table'
 end
 
 --------------------------------- EXPOSED -------------------------------------
@@ -15,8 +20,11 @@ local LuaRPC = {}
 -- "Private" functionalities --
 -------------------------------
 function LuaRPC:_parse(ifile)
+    ispecProspectMemoizer = nil
     dofile(ifile)
-    return ispecMemoizer
+    assert(istable(ispecProspectMemoizer),
+    'The file "' .. ifile .. '" is either missing or syntatically invalid')
+    return ispecProspectMemoizer
 end
 
 ------------------------------

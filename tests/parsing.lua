@@ -1,7 +1,9 @@
 local lu = require('luaunit')
 local luarpc = require('luarpc')
 
-local expectedGivenISpec = {
+print('TEST: parsing')
+
+local expectedGivenISpecProspect = {
     name = 'minhaInt',
     methods = {
           foo = { resulttype = 'double',
@@ -18,8 +20,8 @@ local expectedGivenISpec = {
     }
 
 function test_canParse()
-    local givenISpec = luarpc:_parse('resources/given.ifile')
-    lu.assertEquals(givenISpec, expectedGivenISpec)
+    local givenISpecProspect = luarpc:_parse('resources/given.ifile')
+    lu.assertEquals(givenISpecProspect, expectedGivenISpecProspect)
 end
 
 function test_cantParseNonExistentFile()
@@ -40,4 +42,10 @@ function test_cantParseBadSyntaxFile()
     end)
 end
 
-print(lu.LuaUnit.run('--name', './tests/parsing'))
+function test_cantParseMaliciousSyntaxFile()
+    lu.assertError(function()
+        luarpc:_parse('resources/malicioussyntax.ifile')
+    end)
+end
+
+lu.LuaUnit.run('--name', './tests/parsing')
