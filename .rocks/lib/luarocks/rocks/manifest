@@ -14,11 +14,40 @@ dependencies = {
             name = "lua"
          }
       }
+   },
+   luaunit = {
+      ["3.3-1"] = {
+         {
+            constraints = {
+               {
+                  op = ">=",
+                  version = {
+                     5, 1, string = "5.1"
+                  }
+               }
+            },
+            name = "lua"
+         },
+         {
+            constraints = {
+               {
+                  op = "<",
+                  version = {
+                     5, 4, string = "5.4"
+                  }
+               }
+            },
+            name = "lua"
+         }
+      }
    }
 }
 modules = {
    ltn12 = {
       "luasocket/3.0rc1-2"
+   },
+   luaunit = {
+      "luaunit/3.3-1"
    },
    mime = {
       "luasocket/3.0rc1-2"
@@ -78,6 +107,18 @@ repository = {
                ["socket.tp"] = "socket/tp.lua",
                ["socket.unix"] = "socket/unix.so",
                ["socket.url"] = "socket/url.lua"
+            }
+         }
+      }
+   },
+   luaunit = {
+      ["3.3-1"] = {
+         {
+            arch = "installed",
+            commands = {},
+            dependencies = {},
+            modules = {
+               luaunit = "luaunit.lua"
             }
          }
       }

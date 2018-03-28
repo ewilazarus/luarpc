@@ -47,3 +47,6 @@ luac.out
 
 # Benchmark outputs
 *.bmk
+
+# Notes
+notes.md
