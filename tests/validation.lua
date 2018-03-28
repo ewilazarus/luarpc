@@ -13,20 +13,20 @@ function test_canValidateGiven()
 end
 
 function test_cantValidateFaultyName()
-    lu.assertError(parseAndValidate, 'resources/missingname.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongname.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL01, parseAndValidate, 'resources/missingname.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL02, parseAndValidate, 'resources/wrongname.ifile')
 end
 
 function test_cantValidateFaultyMethods()
-    lu.assertError(parseAndValidate, 'resources/missingmethods1.ifile')
-    lu.assertError(parseAndValidate, 'resources/missingmethods2.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongmethods.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL03, parseAndValidate, 'resources/missingmethods1.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL05, parseAndValidate, 'resources/missingmethods2.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL04, parseAndValidate, 'resources/wrongmethods.ifile')
 end
 
 function test_cantValidateMethodWithFaultyResultType()
-    lu.assertError(parseAndValidate, 'resources/missingresulttype.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongresulttype1.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongresulttype2.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL06, parseAndValidate, 'resources/missingresulttype.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL07, parseAndValidate, 'resources/wrongresulttype1.ifile')
+    lu.assertErrorMsgContains(errorMessages.ISPVAL08, parseAndValidate, 'resources/wrongresulttype2.ifile')
 end
 
 function test_canValidateMethodWithMissingArgs()
@@ -35,12 +35,12 @@ function test_canValidateMethodWithMissingArgs()
 end
 
 function test_cantValidateMethodWithFaultyArgs()
-    lu.assertError(parseAndValidate, 'resources/wrongargs1.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongargs2.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongargs3.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongargs4.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongargs5.ifile')
-    lu.assertError(parseAndValidate, 'resources/wrongargs6.ifile')
+    lu.assertError(errorMessages.ISPVAL09, parseAndValidate, 'resources/wrongargs1.ifile')
+    lu.assertError(errorMessages.ISPVAL10, parseAndValidate, 'resources/wrongargs2.ifile')
+    lu.assertError(errorMessages.ISPVAL11, parseAndValidate, 'resources/wrongargs3.ifile')
+    lu.assertError(errorMessages.ISPVAL12, parseAndValidate, 'resources/wrongargs4.ifile')
+    lu.assertError(errorMessages.ISPVAL13, parseAndValidate, 'resources/wrongargs5.ifile')
+    lu.assertError(errorMessages.ISPVAL14, parseAndValidate, 'resources/wrongargs6.ifile')
 end
 
 
