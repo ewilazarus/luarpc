@@ -1,3 +1,6 @@
+local table = require('table')
+
+
 ------------------------------------------------------ ERRORS ---------------------------------------------------------
 errors = {
     I01 = 'The provided interface file is either missing or syntatically invalid',
@@ -14,29 +17,40 @@ errors = {
     I12 = 'The provided interface has a "direction" attribute whose value is neither \'in\', \'out\' nor \'inout\'',
     I13 = 'The provided interface has an "args" attribute whose value does not define a "type" attribute',
     I14 = 'The provided interface has a "type" attribute whose value is not of type "string"',
-    I15 = 'The provided interface has a "type" attribute whose value is neither \'char\', \'string\' nor \'double\''
+    I15 = 'The provided interface has a "type" attribute whose value is neither \'char\', \'string\' nor \'double\'',
+    S01 = 'The provided definition does not implement all methods in the inferface',
+    S02 = 'The provided definition implements a method that is not of type "function"'
 }
 
 
 ----------------------------------------------------- HELPERS ---------------------------------------------------------
 local function istype(t)
-    return function(value)
-        return type(value) == t
-    end
+    return function(value) return type(value) == t end
 end
 
 local istable = istype('table')
 local isstring = istype('string')
+local isfunction = istype('function')
 
 local function hasvalue(array)
     return function(value)
         for _, v in pairs(array) do
-            if v == value then
-                return true
-            end
+            if v == value then return true end
         end
         return false
     end
+end
+
+local function gettablelength(t)
+    local length = 0
+    for _ in pairs(t) do length = length + 1 end
+    return length
+end
+
+local function gettablekeys(t)
+    local keys = {}
+    for k, _ in pairs(t) do table.insert(keys, k) end
+    return keys
 end
 
 
@@ -50,9 +64,7 @@ local InterfaceHandler = {}
 
 function InterfaceHandler:_normalize(prospect)
     for _, definition in pairs(prospect.methods) do
-        if definition.args == nil then
-            definition.args = {}
-        end
+        if definition.args == nil then definition.args = {} end
     end
     return prospect
 end
@@ -124,18 +136,52 @@ function InterfaceHandler:consume(file)
 end
 
 
+----------------------------------------------------- SERVANT ---------------------------------------------------------
+local ServantBuilder = {}
+
+function ServantBuilder:_validateMethod(dmethod, smethod)
+end
+
+function ServantBuilder:validate(def, spec)
+    dmethodnames = gettablekeys(def)
+    smethodnames = gettablekeys(spec.methods)
+    for _, smethodname in pairs(smethodnames) do
+        local dmethod = def[smethodname]
+        assert(dmethod ~= nil, errors.S01)
+        assert(isfunction(dmethod), errors.S02)
+        self:_validateMethod(dmethod, spec.methods[smethodname])
+    end
+    return true
+end
+
+function ServantBuilder:bind(def)
+end
+
+local ServantPool = {}
+
+ServantPool._builder = ServantBuilder
+ServantPool.instances = {}
+
+function ServantPool:add(def, spec)
+    self._builder:validate(def, spec)
+    local instance = self._builder:bind(def)
+    table.insert(self.instances, instance)
+end
+
+
 -----------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------- EXPOSED ---------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 local LuaRPC = {}
 
 LuaRPC._interfaceHandler = InterfaceHandler
+LuaRPC._servantPool = ServantPool
 
 function LuaRPC:createProxy(ip, port, file)
     -- TODO: Implement
 end
 
-function LuaRPC:createServant(idef, file)
+function LuaRPC:createServant(def, file)
     -- TODO: Implement
 end
 

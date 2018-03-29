@@ -7,8 +7,8 @@ local interfaceHandler = luarpc._interfaceHandler
 
 local expectedNormalizedISpec = { name = 'minhaInt', methods = { foo = { resulttype = 'double', args = {} } } }
 
-local function parseValidateAndNormalize(ifile)
-    return interfaceHandler:_normalize(interfaceHandler:_validate(interfaceHandler:_parse(ifile)))
+local function parseValidateAndNormalize(file)
+    return interfaceHandler:_normalize(interfaceHandler:_validate(interfaceHandler:_parse(file)))
 end
 
 

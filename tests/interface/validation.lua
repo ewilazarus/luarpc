@@ -5,8 +5,8 @@ print('TEST: interface validation')
 
 local interfaceHandler = luarpc._interfaceHandler
 
-local function parseAndValidate(ifile)
-    return interfaceHandler:_validate(interfaceHandler:_parse(ifile))
+local function parseAndValidate(file)
+    return interfaceHandler:_validate(interfaceHandler:_parse(file))
 end
 
 
