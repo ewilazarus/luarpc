@@ -1,4 +1,5 @@
 local table = require('table')
+local socket = require('socket')
 
 
 ------------------------------------------------------ ERRORS ---------------------------------------------------------
@@ -220,6 +221,7 @@ function ServantBuilder:validate(def, spec)
 end
 
 function ServantBuilder:bind(def, name)
+
 end
 
 
