@@ -10,6 +10,7 @@ local function consumeAndValidate(def, file)
     return servantBuilder:validate(def, interfaceHandler:consume(file))
 end
 
+
 local givenDef = {
     foo = function(a, b, s) return a+b, 'alo alo' end,
     boo = function(n) return n end

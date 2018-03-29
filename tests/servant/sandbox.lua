@@ -36,7 +36,7 @@ function test_cantValidateWrongReturnType()
 end
 
 local function throwsError()
-    return 1 / 0
+    return error('An error')
 end
 
 function test_canValidatePossiblyErrorReturn()

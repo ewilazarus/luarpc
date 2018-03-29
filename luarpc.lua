@@ -73,7 +73,8 @@ function InterfaceHandler:_getArgTypesByDirection(args, direction)
     return argTypes
 end
 
-function InterfaceHandler:_addMetadata(prospect)
+function InterfaceHandler:_addMetadata(prospect, id)
+    prospect._id = prospect.name .. '[' .. id .. ']'
     for _, method in pairs(prospect.methods) do
         local inTypes = self:_getArgTypesByDirection(method.args, 'in')
         local outArgTypes = self:_getArgTypesByDirection(method.args, 'out')
@@ -153,7 +154,7 @@ function InterfaceHandler:_parse(file)
 end
 
 function InterfaceHandler:consume(file)
-    return self:_addMetadata(self:_normalize(self:_validate(self:_parse(file))))
+    return self:_addMetadata(self:_normalize(self:_validate(self:_parse(file))), file)
 end
 
 
@@ -190,14 +191,13 @@ end
 
 function ServantBuilderSandbox:run(method, meta)
     local input = self:_createInput(meta)
-    local returnValues = {pcall(method(table.unpack(input)))}
-    local success = table.remove(returnValues, 1)
+    local success, returnVals = pcall(function() return {method(table.unpack(input))} end)
     if success then
-        assert(#returnValues == #meta.outTypes, errors.S03)
+        assert(#returnVals == #meta.outTypes, errors.S03)
         local outputValidators = self:_createOutputValidators(meta)
-        assert(self:_validateOutput(returnValues, outputValidators), errors.S04)
+        assert(self:_validateOutput(returnVals, outputValidators), errors.S04)
     else
-        --print('WARNING: one of the provided definitions might be throwing an error')
+        print('WARNING: one of the provided definitions might be prone to throw an error')
     end
     return true
 end
@@ -226,11 +226,23 @@ end
 local ServantPool = {}
 
 ServantPool._builder = ServantBuilder
+ServantPool._instanceCatalog = {}
 ServantPool.instances = {}
+
+function ServantPool:_createNextVersion(id)
+    local version = self._instanceCatalog[id]
+    if version == nil then
+        version = 1
+    else
+        version = version + 1
+    end
+    self._instanceCatalog[id] = version
+    return id .. '#' .. version
+end
 
 function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
-    local instance = self._builder:bind(def, spec.name)
+    local instance = self._builder:bind(def, self:_createNextVersion(spec._id))
     table.insert(self.instances, instance)
 end
 

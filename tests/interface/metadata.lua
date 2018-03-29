@@ -6,11 +6,12 @@ print('TEST: interface metadata')
 local interfaceHandler = luarpc._interfaceHandler
 
 local function parseValidateNormalizeAndAddMetadata(file)
-    return interfaceHandler:_addMetadata(interfaceHandler:_normalize(interfaceHandler:_validate(interfaceHandler:_parse(file))))
+    return interfaceHandler:_addMetadata(interfaceHandler:_normalize(interfaceHandler:_validate(interfaceHandler:_parse(file))), file)
 end
 
 
-local expectedGivenSpecProspect = {
+local expectedGivenSpec = {
+    _id = 'minhaInt[resources/meta.ifile]',
     name = 'minhaInt',
     methods = {
           foo = { resulttype = 'double',
@@ -42,7 +43,7 @@ local expectedGivenSpecProspect = {
           }}}
 
 function test_canAddMetadata()
-    lu.assertEquals(parseValidateNormalizeAndAddMetadata('resources/meta.ifile'), expectedGivenSpecProspect)
+    lu.assertEquals(parseValidateNormalizeAndAddMetadata('resources/meta.ifile'), expectedGivenSpec)
 end
 
 
