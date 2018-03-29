@@ -5,7 +5,7 @@ print('TEST: interface parsing')
 
 local interfaceHandler = luarpc._interfaceHandler
 
-local expectedGivenISpecProspect = {
+local expectedGivenSpecProspect = {
     name = 'minhaInt',
     methods = {
           foo = { resulttype = 'double',
@@ -23,7 +23,7 @@ local expectedGivenISpecProspect = {
 
 function test_canParse()
     local givenISpecProspect = interfaceHandler:_parse('resources/given.ifile')
-    lu.assertEquals(givenISpecProspect, expectedGivenISpecProspect)
+    lu.assertEquals(givenISpecProspect, expectedGivenSpecProspect)
 end
 
 function test_cantParseNonExistentFile()

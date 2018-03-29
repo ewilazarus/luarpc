@@ -19,20 +19,22 @@ errors = {
     I14 = 'The provided interface has a "type" attribute whose value is not of type "string"',
     I15 = 'The provided interface has a "type" attribute whose value is neither \'char\', \'string\' nor \'double\'',
     S01 = 'The provided definition does not implement all methods in the inferface',
-    S02 = 'The provided definition implements a method that is not of type "function"'
+    S02 = 'The provided definition implements a method that is not of type "function"',
+    S03 = 'The provided definition implements a method that does not return the amount of values accordingly to the interface',
+    S04 = 'The provided definition implements a method that does not return the types accordingly to the interface'
 }
 
 
 ----------------------------------------------------- HELPERS ---------------------------------------------------------
-local function istype(t)
+local function isType(t)
     return function(value) return type(value) == t end
 end
 
-local istable = istype('table')
-local isstring = istype('string')
-local isfunction = istype('function')
+local isTable = isType('table')
+local isString = isType('string')
+local isFunction = isType('function')
 
-local function hasvalue(array)
+local function hasValue(array)
     return function(value)
         for _, v in pairs(array) do
             if v == value then return true end
@@ -41,16 +43,15 @@ local function hasvalue(array)
     end
 end
 
-local function gettablelength(t)
-    local length = 0
-    for _ in pairs(t) do length = length + 1 end
-    return length
-end
-
-local function gettablekeys(t)
+local function getTableKeys(t)
     local keys = {}
     for k, _ in pairs(t) do table.insert(keys, k) end
     return keys
+end
+
+local function concatArrays(array1, array2)
+    for _, v in pairs(array2) do table.insert(array1, v) end
+    return array1
 end
 
 
@@ -62,22 +63,42 @@ end
 
 local InterfaceHandler = {}
 
-function InterfaceHandler:_normalize(prospect)
-    for _, definition in pairs(prospect.methods) do
-        if definition.args == nil then definition.args = {} end
+function InterfaceHandler:_getArgTypesByDirection(args, direction)
+    local argTypes = {}
+    for _, arg in pairs(args) do
+        if arg.direction == direction or arg.direction == 'inout' then
+            table.insert(argTypes, arg.type)
+        end
+    end
+    return argTypes
+end
+
+function InterfaceHandler:_addMetadata(prospect)
+    for _, method in pairs(prospect.methods) do
+        local inTypes = self:_getArgTypesByDirection(method.args, 'in')
+        local outArgTypes = self:_getArgTypesByDirection(method.args, 'out')
+        local outTypes = method.resulttype == 'void' and outArgTypes or concatArrays({method.resulttype}, outArgTypes)
+        method._meta = { inTypes = inTypes, outTypes = outTypes }
     end
     return prospect
 end
 
-InterfaceHandler._isvalidargtype = hasvalue({'char', 'string', 'double'})
-InterfaceHandler._isvalidargdirection = hasvalue({'in', 'out', 'inout'})
+function InterfaceHandler:_normalize(prospect)
+    for _, method in pairs(prospect.methods) do
+        if method.args == nil then method.args = {} end
+    end
+    return prospect
+end
+
+InterfaceHandler._isvalidargtype = hasValue({'char', 'string', 'double'})
+InterfaceHandler._isvalidargdirection = hasValue({'in', 'out', 'inout'})
 
 function InterfaceHandler:_validateMethodArg(arg)
     assert(arg.direction, errors.I10)
-    assert(isstring(arg.direction), errors.I11)
+    assert(isString(arg.direction), errors.I11)
     assert(self._isvalidargdirection(arg.direction), errors.I12)
     assert(arg.type, errors.I13)
-    assert(isstring(arg.type), errors.I14)
+    assert(isString(arg.type), errors.I14)
     assert(self._isvalidargtype(arg.type), errors.I15)
 end
 
@@ -89,11 +110,11 @@ function InterfaceHandler:_validateMethodArgs(method)
     end
 end
 
-InterfaceHandler._isvalidresulttype = hasvalue({'void', 'char', 'string', 'double'})
+InterfaceHandler._isvalidresulttype = hasValue({'void', 'char', 'string', 'double'})
 
 function InterfaceHandler:_validateMethodResultType(method)
     assert(method.resulttype, errors.I07)
-    assert(isstring(method.resulttype), errors.I08)
+    assert(isString(method.resulttype), errors.I08)
     assert(self._isvalidresulttype(method.resulttype), errors.I09)
 end
 
@@ -104,7 +125,7 @@ end
 
 function InterfaceHandler:_validateMethods(prospect)
     assert(prospect.methods, errors.I04)
-    assert(istable(prospect.methods), errors.I05)
+    assert(isTable(prospect.methods), errors.I05)
     local methodCount = 0
     for _, method in pairs(prospect.methods) do
         methodCount = methodCount + 1
@@ -115,7 +136,7 @@ end
 
 function InterfaceHandler:_validateName(prospect)
     assert(prospect.name, errors.I02)
-    assert(isstring(prospect.name), errors.I03)
+    assert(isString(prospect.name), errors.I03)
 end
 
 function InterfaceHandler:_validate(prospect)
@@ -127,35 +148,80 @@ end
 function InterfaceHandler:_parse(file)
     prospectMemoizer = nil
     dofile(file)
-    assert(istable(prospectMemoizer), errors.I01)
+    assert(isTable(prospectMemoizer), errors.I01)
     return prospectMemoizer
 end
 
 function InterfaceHandler:consume(file)
-    return self:_normalize(self:_validate(self:_parse(file)))
+    return self:_addMetadata(self:_normalize(self:_validate(self:_parse(file))))
 end
 
 
 ----------------------------------------------------- SERVANT ---------------------------------------------------------
-local ServantBuilder = {}
+local ServantBuilderSandbox = {}
 
-function ServantBuilder:_validateMethod(dmethod, smethod)
+ServantBuilderSandbox._inputDefaults = { double = 1, string = 'abc', char = 'c' }
+ServantBuilderSandbox._outputTypeAdapters = { double = 'number', char = 'string', string = 'string' }
+
+function ServantBuilderSandbox:_createOutputValidators(meta)
+    local validators = {}
+    for _, m in pairs(meta.outTypes) do
+        table.insert(validators, isType(self._outputTypeAdapters[m]))
+    end
+    return validators
 end
 
-function ServantBuilder:validate(def, spec)
-    dmethodnames = gettablekeys(def)
-    smethodnames = gettablekeys(spec.methods)
-    for _, smethodname in pairs(smethodnames) do
-        local dmethod = def[smethodname]
-        assert(dmethod ~= nil, errors.S01)
-        assert(isfunction(dmethod), errors.S02)
-        self:_validateMethod(dmethod, spec.methods[smethodname])
+function ServantBuilderSandbox:_createInput(meta)
+    local input = {}
+    for _, m in pairs(meta.inTypes) do
+        table.insert(input, self._inputDefaults[m])
+    end
+    return input
+end
+
+function ServantBuilderSandbox:_validateOutput(returnValues, outputValidators)
+    for i = 1, #returnValues do
+        if not outputValidators[i](returnValues[i]) then
+            return false
+        end
     end
     return true
 end
 
-function ServantBuilder:bind(def)
+function ServantBuilderSandbox:run(method, meta)
+    local input = self:_createInput(meta)
+    local returnValues = {pcall(method(table.unpack(input)))}
+    local success = table.remove(returnValues, 1)
+    if success then
+        assert(#returnValues == #meta.outTypes, errors.S03)
+        local outputValidators = self:_createOutputValidators(meta)
+        assert(self:_validateOutput(returnValues, outputValidators), errors.S04)
+    else
+        --print('WARNING: one of the provided definitions might be throwing an error')
+    end
+    return true
 end
+
+
+local ServantBuilder = {}
+
+ServantBuilder._sandbox = ServantBuilderSandbox
+
+function ServantBuilder:validate(def, spec)
+    local smethodnames = getTableKeys(spec.methods)
+    for i = 1, #smethodnames do
+        local smethodname = smethodnames[i]
+        local dmethod = def[smethodname]
+        assert(dmethod ~= nil, errors.S01)
+        assert(isFunction(dmethod), errors.S02)
+        self._sandbox:run(dmethod, spec.methods[smethodname]._meta)
+    end
+    return true
+end
+
+function ServantBuilder:bind(def, name)
+end
+
 
 local ServantPool = {}
 
@@ -164,7 +230,7 @@ ServantPool.instances = {}
 
 function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
-    local instance = self._builder:bind(def)
+    local instance = self._builder:bind(def, spec.name)
     table.insert(self.instances, instance)
 end
 
