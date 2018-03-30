@@ -15,9 +15,10 @@ function test_canCreateNextVersion()
 end
 
 function test_canCreateNextNextVersion()
-    getNextVersion('ble')
+    createNextVersion('ble')
     lu.assertEquals(createNextVersion('ble'), 'ble#2')
 end
 
 
 lu.LuaUnit.run('--name', './tests/servant/catalog')
+print('\n\n')

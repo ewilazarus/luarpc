@@ -18,3 +18,4 @@ end
 
 
 lu.LuaUnit.run('--name', './tests/interface/normalization')
+print('\n\n')

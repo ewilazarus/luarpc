@@ -48,3 +48,4 @@ end
 
 
 lu.LuaUnit.run('--name', './tests/interface/metadata')
+print('\n\n')

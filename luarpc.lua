@@ -249,7 +249,7 @@ function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
     local instance = self._builder:bind(def, self:_createNextVersion(spec._id))
     table.insert(self.instances, instance)
-    return true
+    return instance
 end
 
 
@@ -267,7 +267,7 @@ end
 
 function LuaRPC:createServant(def, file)
     local spec = self._interfaceHandler:consume(file)
-    self._servantPool:add(def, spec)
+    return self._servantPool:add(def, spec)
 end
 
 function LuaRPC:waitIncoming()

@@ -19,9 +19,10 @@ local givenDef = {
 
 function test_canAddServant()
     lu.assertEquals(#servantPool.instances, 0)
-    lu.assertTrue(addServant(givenDef, 'resources/given.ifile'))
+    lu.assertNotNil(addServant(givenDef, 'resources/given.ifile'))
     lu.assertEquals(#servantPool.instances, 1)
 end
 
 
 lu.LuaUnit.run('--name', './tests/servant/catalog')
+print('\n\n')
