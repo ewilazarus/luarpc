@@ -198,7 +198,7 @@ function ServantBuilderSandbox:run(method, meta)
         local outputValidators = self:_createOutputValidators(meta)
         assert(self:_validateOutput(returnVals, outputValidators), errors.S04)
     else
-        print('WARNING: one of the provided definitions might be prone to throw an error')
+        print('WARN: one of the provided definitions might be prone to throw an error')
     end
     return true
 end
@@ -221,7 +221,10 @@ function ServantBuilder:validate(def, spec)
 end
 
 function ServantBuilder:bind(def, name)
-
+    local s = assert(socket.bind('*', '0'))
+    local ip, port = s:getsockname()
+    print('INFO: Definition for "' .. name .. '" bound to "' .. ip .. ':' .. port .. '"')
+    return { id = name, ip = ip, port = port, fn = def }
 end
 
 
@@ -246,6 +249,7 @@ function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
     local instance = self._builder:bind(def, self:_createNextVersion(spec._id))
     table.insert(self.instances, instance)
+    return true
 end
 
 
@@ -262,7 +266,8 @@ function LuaRPC:createProxy(ip, port, file)
 end
 
 function LuaRPC:createServant(def, file)
-    -- TODO: Implement
+    local spec = self._interfaceHandler:consume(file)
+    self._servantPool:add(def, spec)
 end
 
 function LuaRPC:waitIncoming()
