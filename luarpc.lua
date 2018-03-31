@@ -474,26 +474,24 @@ end
 -----------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------- EXPOSED ---------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-local LuaRPC = {}
+return {
+    createProxy = function(ip, port, file)
+        local spec = InterfaceHandler:consume(file)
+        return ProxyFactory:createProxy(ip, port, spec)
+    end,
 
-LuaRPC._interfaceHandler = InterfaceHandler
-LuaRPC._servantPool = ServantPool
-LuaRPC._proxyFactory = ProxyFactory
-LuaRPC._marshaling = Marshaling
-LuaRPC._awaiter = Awaiter
+    createServant = function(def, file)
+        local spec = InterfaceHandler:consume(file)
+        return ServantPool:add(def, spec)
+    end,
 
-function LuaRPC:createProxy(ip, port, file)
-    local spec = self._interfaceHandler:consume(file)
-    return self._proxyFactory:createProxy(ip, port, spec)
-end
+    waitIncoming = function()
+        Awaiter:waitIncoming(ServantPool.instances, Marshaling)
+    end,
 
-function LuaRPC:createServant(def, file)
-    local spec = self._interfaceHandler:consume(file)
-    return self._servantPool:add(def, spec)
-end
-
-function LuaRPC:waitIncoming()
-    self._awaiter:waitIncoming(self._servantPool.instances, self._marshaling)
-end
-
-return LuaRPC
+    _interfaceHandler = InterfaceHandler,
+    _servantPool = ServantPool,
+    _proxyFactory = ProxyFactory,
+    _marshaling = Marshaling,
+    _awaiter = Awaiter
+}
