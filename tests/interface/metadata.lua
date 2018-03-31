@@ -11,7 +11,7 @@ end
 
 
 local expectedGivenSpec = {
-    _id = 'minhaInt[resources/meta.ifile]',
+    _id = 'minhaInt[resources/meta.idl]',
     name = 'minhaInt',
     methods = {
           foo = { resulttype = 'double',
@@ -43,7 +43,7 @@ local expectedGivenSpec = {
           }}}
 
 function test_canAddMetadata()
-    lu.assertEquals(parseValidateNormalizeAndAddMetadata('resources/meta.ifile'), expectedGivenSpec)
+    lu.assertEquals(parseValidateNormalizeAndAddMetadata('resources/meta.idl'), expectedGivenSpec)
 end
 
 

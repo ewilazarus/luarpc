@@ -29,7 +29,15 @@ errors = {
 
 ----------------------------------------------------- HELPERS ---------------------------------------------------------
 local function isType(t)
-    return function(value) return type(value) == t end
+    return function(value)
+        if t == 'char' then
+            return type(value) == 'string' and string.len(value) == 1
+        end
+        if t == 'double' then
+            return type(value) == 'number'
+        end
+        return type(value) == t
+    end
 end
 
 local isTable = isType('table')
@@ -240,12 +248,11 @@ end
 local ServantBuilderSandbox = {}
 
 ServantBuilderSandbox._inputDefaults = { double = 1, string = 'abc', char = 'c' }
-ServantBuilderSandbox._outputTypeAdapters = { double = 'number', char = 'string', string = 'string' }
 
 function ServantBuilderSandbox:_createOutputValidators(meta)
     local validators = {}
     for _, o in pairs(meta.outTypes) do
-        table.insert(validators, isType(self._outputTypeAdapters[o]))
+        table.insert(validators, isType(o))
     end
     return validators
 end
@@ -330,14 +337,13 @@ end
 local ProxyFactory = {}
 
 ProxyFactory._defaultInputTypes = { double = 1, char = 'c', string = 'string' }
-ProxyFactory._inputTypeAdapters = { double = 'number', char = 'string', string = 'string' }
 
 function ProxyFactory:_cleanArgs(meta, args)
     for i, itype in pairs(meta.inTypes) do
         if args[i] == nil then
             args[i] = self._defaultInputTypes[itype]
         else
-            local validate = isType(self._inputTypeAdapters[itype])
+            local validate = isType(itype)
             assert(validate(args[i]), errors.P01)
         end
     end

@@ -13,7 +13,7 @@ end
 local expectedNormalizedSpec = { name = 'minhaInt', methods = { foo = { resulttype = 'double', args = {} } } }
 
 function test_canNormalizeMissingMethodArgs()
-    lu.assertEquals(parseValidateAndNormalize('resources/missingargs1.ifile'), expectedNormalizedSpec)
+    lu.assertEquals(parseValidateAndNormalize('resources/missingargs1.idl'), expectedNormalizedSpec)
 end
 
 

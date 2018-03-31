@@ -22,31 +22,31 @@ local expectedGivenSpecProspect = {
     }
 
 function test_canParse()
-    local givenISpecProspect = interfaceHandler:_parse('resources/given.ifile')
+    local givenISpecProspect = interfaceHandler:_parse('resources/given.idl')
     lu.assertEquals(givenISpecProspect, expectedGivenSpecProspect)
 end
 
 function test_cantParseNonExistentFile()
     lu.assertError(function()
-        interfaceHandler:_parse('resources/nonexistent.ifile')
+        interfaceHandler:_parse('resources/nonexistent.idl')
     end)
 end
 
 function test_cantParseEmptyFile()
     lu.assertError(function()
-        interfaceHandler:_parse('resources/empty.ifile')
+        interfaceHandler:_parse('resources/empty.idl')
     end)
 end
 
 function test_cantParseBadSyntaxFile()
     lu.assertError(function()
-        interfaceHandler:_parse('resources/badsyntax.ifile')
+        interfaceHandler:_parse('resources/badsyntax.idl')
     end)
 end
 
 function test_cantParseMaliciousSyntaxFile()
     lu.assertError(function()
-        interfaceHandler:_parse('resources/malicioussyntax.ifile')
+        interfaceHandler:_parse('resources/malicioussyntax.idl')
     end)
 end
 

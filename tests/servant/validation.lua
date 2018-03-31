@@ -17,7 +17,7 @@ local givenDef = {
 }
 
 function test_canValidateGiven()
-    lu.assertTrue(consumeAndValidate(givenDef, 'resources/given.ifile'))
+    lu.assertTrue(consumeAndValidate(givenDef, 'resources/given.idl'))
 end
 
 local missingMethodDef = {
@@ -25,7 +25,7 @@ local missingMethodDef = {
 }
 
 function test_cantValidateMissingMethod()
-    lu.assertErrorMsgContains(errors.S01, consumeAndValidate, missingMethodDef, 'resources/given.ifile')
+    lu.assertErrorMsgContains(errors.S01, consumeAndValidate, missingMethodDef, 'resources/given.idl')
 end
 
 local wrongMethodNameDef = {
@@ -34,7 +34,7 @@ local wrongMethodNameDef = {
 }
 
 function test_cantValidateWrongMethodName()
-    lu.assertErrorMsgContains(errors.S01, consumeAndValidate, wrongMethodNameDef, 'resources/given.ifile')
+    lu.assertErrorMsgContains(errors.S01, consumeAndValidate, wrongMethodNameDef, 'resources/given.idl')
 end
 
 local nonFunctionMemberDef = {
@@ -43,7 +43,7 @@ local nonFunctionMemberDef = {
 }
 
 function test_cantValidateNonFunctionMember()
-    lu.assertErrorMsgContains(errors.S02, consumeAndValidate, nonFunctionMemberDef, 'resources/given.ifile')
+    lu.assertErrorMsgContains(errors.S02, consumeAndValidate, nonFunctionMemberDef, 'resources/given.idl')
 end
 
 
