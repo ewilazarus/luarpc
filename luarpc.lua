@@ -358,6 +358,9 @@ local ProxyFactory = {}
 ProxyFactory._defaultInputTypes = { double = 1, char = 'c', string = 'string' }
 
 function ProxyFactory:_cleanArgs(meta, args)
+    if isTable(args[1]) then
+        table.remove(args, 1)
+    end
     for i, itype in pairs(meta.inTypes) do
         if args[i] == nil then
             args[i] = self._defaultInputTypes[itype]
@@ -396,7 +399,7 @@ function ProxyFactory:createProxy(ip, port, spec)
     local proxy = {}
     local s = assert(socket.tcp())
     s:connect(ip, port)
-    proxy._socket = s
+    -- proxy._socket = s
     for name, method in pairs(spec.methods) do
         proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
     end

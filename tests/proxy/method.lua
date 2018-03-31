@@ -97,7 +97,7 @@ local methodMock51 = {
 
 local socketMock51 = createSocketMock(function() return 'hello im not a char', nil end)
 
-function test_cantCreateMethodWithWrongTypes()
+function test_cantCreateMethodWithWrongTypes2()
 local method = createProxyMethod(methodMock51, socketMock51)
 lu.assertErrorMsgContains(errors.P01, method, 'hello im not a char')
 end
