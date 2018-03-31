@@ -302,11 +302,11 @@ function ServantBuilder:validate(def, spec)
     return true
 end
 
-function ServantBuilder:bind(def, name)
+function ServantBuilder:bind(def, id, name)
     local s = assert(socket.bind('*', '0'))
     local ip, port = s:getsockname()
     print('INFO: Definition for "' .. name .. '" bound to "' .. ip .. ':' .. port .. '"')
-    return { id = name, ip = ip, port = port, fn = def }
+    return { id = id .. '@' .. port, name = name, ip = ip, port = port, fn = def }
 end
 
 
@@ -329,7 +329,7 @@ end
 
 function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
-    local instance = self._builder:bind(def, self:_createNextVersion(spec._id))
+    local instance = self._builder:bind(def, self:_createNextVersion(spec._id), spec.name)
     table.insert(self.instances, instance)
     return instance
 end
@@ -353,15 +353,24 @@ function ProxyFactory:_cleanArgs(meta, args)
     return args
 end
 
-function ProxyFactory:_createProxyMethodWrapper(meta, s)
+function ProxyFactory:_createProxyMethodWrapper(name, method, s, marshaler)
     return function(...)
-        local cleansedArgs = self:_cleanArgs(meta, arg)
+        local cleansedArgs = self:_cleanArgs(method._meta, arg)
+        local reqStub = marshaler:marshalRequest(name, cleansedArgs)
 
-        -- marshal request
-        -- send
-        -- receber resultado
-        -- unmarshal result
-        -- return
+        s:send(reqStub)
+        local resStub, err = s:recv()
+        if err ~= nil then
+            print('ERRO: connection with server failed (' .. err .. ')')
+            return nil
+        end
+
+        local success, rvs = marshaler:unmarshalResponse(resStub)
+        if not success then
+            print('ERRO: ' .. rvs)
+            return nil
+        end
+        return table.unpack(rvs)
     end
 end
 
@@ -371,11 +380,10 @@ function ProxyFactory:createProxy(ip, port, spec)
     s:connect(ip, port)
     proxy._socket = s
     for name, method in pairs(spec) do
-        proxy[name] = self:_createProxyMethodWrapper(method._meta, s)
+        proxy[name] = self:_createProxyMethodWrapper(name, method, s, Marshaling)
     end
     return proxy
 end
-
 
 
 -----------------------------------------------------------------------------------------------------------------------
