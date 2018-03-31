@@ -316,11 +316,11 @@ function ServantBuilder:validate(def, spec)
     return true
 end
 
-function ServantBuilder:bind(def, id, name)
+function ServantBuilder:bind(def, id, spec)
     local s = assert(socket.bind('*', '0'))
     local ip, port = s:getsockname()
-    logInfo('Definition for "' .. name .. '" bound to "' .. ip .. ':' .. port .. '"')
-    return { id = id .. '@' .. port, name = name, ip = ip, port = port, fn = def }
+    logInfo('Definition for "' .. id .. '" bound to "' .. ip .. ':' .. port .. '"')
+    return { id = id .. '@' .. port, name = spec.name, ip = ip, port = port, def = def, socket = s, spec = spec }
 end
 
 
@@ -339,7 +339,7 @@ end
 
 function ServantPool:add(def, spec)
     self._builder:validate(def, spec)
-    local instance = self._builder:bind(def, self:_createNextVersion(spec._id), spec.name)
+    local instance = self._builder:bind(def, self:_createNextVersion(spec._id), spec)
     table.insert(self.instances, instance)
     return instance
 end
@@ -368,11 +368,13 @@ function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
         local reqStub = marshaler:marshalRequest(name, cleansedArgs)
 
         s:send(reqStub)
+        logInfo('Sent request')
         local resStub, err = s:recv()
         if err ~= nil then
             logErro('Connection with server failed (' .. err .. ')')
             return nil
         end
+        logInfo('Received response')
 
         local success, rvs = marshaler:unmarshalResponse(resStub, methodMeta)
         if not success then
@@ -396,6 +398,57 @@ function ProxyFactory:createProxy(ip, port, spec)
 end
 
 
+----------------------------------------------------- AWAITER ---------------------------------------------------------
+local Awaiter = {}
+
+
+function Awaiter:_run(method, args)
+    return pcall(function()
+        return method(table.unpack(args))
+    end)
+end
+
+function Awaiter:_act(instance, s, marshaler)
+    local reqStub, err = s:recv()
+    if err ~= nil then
+        logErro('Connection with client failed (' .. err .. ')')
+        return false
+    end
+    logInfo('Received request')
+
+    local success, method, args = marshaler:unmarshalRequest(reqStub, instance.meta)
+    if not success then
+        logErro(method)
+        return false
+    end
+
+    local runSuccess, rvs = self:_run(instance.def[method], args)
+    resStub = runSuccess and marshaler:marshalResponse(rvs) or marshaler:marshalErrorResponse(rvs)
+    s:send(resStub)  -- TODO: verificar se tem que tratar erro
+    logInfo('Sent response')
+
+    return true
+end
+
+function Awaiter:_getSockets(instances)
+    local sockets = {}
+    for _, instance in pairs(instances) do
+        table.insert(sockets, instance.socket)
+    end
+    return sockets
+end
+
+function Awaiter:waitIncoming(instances, marshaler)
+    local sockets = self:_getSockets(instances)
+    while true do
+        local awaiters = socket.select(sockets, nil, 0)
+        for i, s in pairs(awaiters) do
+            self:_act(instances[i], s, marshaler)
+        end
+    end
+end
+
+
 -----------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------- EXPOSED ---------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -405,6 +458,7 @@ LuaRPC._interfaceHandler = InterfaceHandler
 LuaRPC._servantPool = ServantPool
 LuaRPC._proxyFactory = ProxyFactory
 LuaRPC._marshaling = Marshaling
+LuaRPC._awaiter = Awaiter
 
 function LuaRPC:createProxy(ip, port, file)
     local spec = self._interfaceHandler:consume(file)
@@ -417,7 +471,7 @@ function LuaRPC:createServant(def, file)
 end
 
 function LuaRPC:waitIncoming()
-    -- TODO: Implement
+    self._awaiter:waitIncoming(self._servantPool.instances, self._marshaling)
 end
 
 return LuaRPC
