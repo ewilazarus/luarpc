@@ -22,7 +22,8 @@ errors = {
     S01 = 'The provided definition does not implement all methods in the inferface',
     S02 = 'The provided definition implements a method that is not of type "function"',
     S03 = 'The provided definition implements a method that does not return the amount of values accordingly to the interface',
-    S04 = 'The provided definition implements a method that does not return the types accordingly to the interface'
+    S04 = 'The provided definition implements a method that does not return the types accordingly to the interface',
+    P01 = 'The provided parameters do not match what is specified in the interface'
 }
 
 
@@ -53,6 +54,87 @@ end
 local function concatArrays(array1, array2)
     for _, v in pairs(array2) do table.insert(array1, v) end
     return array1
+end
+
+local function stringStartsWith(s, start)
+    return string.sub(s, 1, string.len(start)) == start
+end
+
+
+--------------------------------------------------- MARSHALING --------------------------------------------------------
+local Marshaling = {}
+
+Marshaling._separator = '|'
+
+function Marshaling:marshalRequest(method, args)
+    local stub = method
+    for _, arg in pairs(args) do
+        stub = stub .. self._separator .. arg
+    end
+    stub = stub .. '\n'
+    return stub
+end
+
+function Marshaling:unmarshalRequest(stub, meta)
+    local method = nil
+    local args = {}
+    count = 0
+    for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
+        if count == 0 then
+            method = segment
+        elseif meta.inTypes[count] == 'double' then
+            local val = tonumber(segment)
+            if val ~= nil then
+                table.insert(args, val)
+            else
+                return false, 'couldn\'t unmarshal client request'
+            end
+        else
+            table.insert(args, segment)
+        end
+        count = count + 1
+    end
+    return true, method, args
+end
+
+function Marshaling:marshalResponse(args)
+    local stub = ''
+    for i, arg in pairs(args) do
+        if i == 1 then
+            stub = stub .. arg
+        else
+            stub = stub .. self._separator .. arg
+        end
+    end
+    stub = stub .. '\n'
+    return stub
+end
+
+function Marshaling:marshalErrorResponse(cause)
+    return '__ERRORPC: ' .. cause .. '\n'
+end
+
+function Marshaling:unmarshalResponse(stub, meta)
+    if stringStartsWith(stub, '__ERRORPC: ') then
+        return false, 'server responded with "' .. string.sub(stub, 12) .. '"'
+    else
+        local args = {}
+        count = 1
+        for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
+            if meta.outTypes[count] == 'double' then
+                local val = tonumber(segment)
+                if val ~= nil then
+                    table.insert(args, val)
+                else
+                    return false, 'couldn\'t unmarshal server response'
+                end
+            else
+                table.insert(args, segment)
+            end
+            count = count + 1
+        end
+        return true, args
+    end
 end
 
 
@@ -167,8 +249,8 @@ ServantBuilderSandbox._outputTypeAdapters = { double = 'number', char = 'string'
 
 function ServantBuilderSandbox:_createOutputValidators(meta)
     local validators = {}
-    for _, m in pairs(meta.outTypes) do
-        table.insert(validators, isType(self._outputTypeAdapters[m]))
+    for _, o in pairs(meta.outTypes) do
+        table.insert(validators, isType(self._outputTypeAdapters[o]))
     end
     return validators
 end
@@ -253,6 +335,49 @@ function ServantPool:add(def, spec)
 end
 
 
+------------------------------------------------------ PROXY ----------------------------------------------------------
+local ProxyFactory = {}
+
+ProxyFactory._defaultInputTypes = { double = 1, char = 'c', string = 'string' }
+ProxyFactory._inputTypeAdapters = { double = 'number', char = 'string', string = 'string' }
+
+function ProxyFactory:_cleanArgs(meta, args)
+    for i, itype in pairs(meta) do
+        if args[i] == nil then
+            args[i] = self._defaultInputTypes[itype]
+        else
+            local validate = hasType(self._inputTypeAdapters[itype])
+            assert(validate(args[i]), errors.P01)
+        end
+    end
+    return args
+end
+
+function ProxyFactory:_createProxyMethodWrapper(meta, s)
+    return function(...)
+        local cleansedArgs = self:_cleanArgs(meta, arg)
+
+        -- marshal request
+        -- send
+        -- receber resultado
+        -- unmarshal result
+        -- return
+    end
+end
+
+function ProxyFactory:createProxy(ip, port, spec)
+    local proxy = {}
+    local s = assert(socket.tcp())
+    s:connect(ip, port)
+    proxy._socket = s
+    for name, method in pairs(spec) do
+        proxy[name] = self:_createProxyMethodWrapper(method._meta, s)
+    end
+    return proxy
+end
+
+
+
 -----------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------- EXPOSED ---------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -260,6 +385,8 @@ local LuaRPC = {}
 
 LuaRPC._interfaceHandler = InterfaceHandler
 LuaRPC._servantPool = ServantPool
+LuaRPC._proxyFactory = ProxyFactory
+LuaRPC._marshaling = Marshaling
 
 function LuaRPC:createProxy(ip, port, file)
     -- TODO: Implement

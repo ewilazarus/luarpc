@@ -47,4 +47,4 @@ end
 
 
 lu.LuaUnit.run('--name', './tests/interface/validation')
-print('\n\n')
+print('\n')

@@ -51,4 +51,4 @@ function test_cantParseMaliciousSyntaxFile()
 end
 
 lu.LuaUnit.run('--name', './tests/interface/parsing')
-print('\n\n')
+print('\n')

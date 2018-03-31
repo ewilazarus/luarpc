@@ -25,4 +25,4 @@ end
 
 
 lu.LuaUnit.run('--name', './tests/servant/catalog')
-print('\n\n')
+print('\n')
