@@ -1,0 +1,39 @@
+interface { name = 'calculator',
+            methods = {
+
+                add = { resulttype = 'double',
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                }},
+
+                multiply = { resulttype = 'double',
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                }},
+
+                divide = { resulttype = 'double',
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                }},
+
+                subtract = { resulttype = 'double',
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                }},
+
+                magic = { resulttype = 'void',
+                args = {
+                    { direction = 'in', type = 'double' },
+                    { direction = 'in', type = 'double' },
+                    { direction = 'out', type = 'string' },
+                    { direction = 'out', type = 'double' },
+                    { direction = 'out', type = 'double' },
+                    { direction = 'out', type = 'double' },
+                    { direction = 'out', type = 'double' },
+                }}
+            }
+}

@@ -323,8 +323,8 @@ function ServantBuilder:validate(def, spec)
     return true
 end
 
-function ServantBuilder:bind(def, id, spec)
-    local s = assert(socket.bind('*', '0'))
+function ServantBuilder:bind(def, id, spec, port)
+    local s = assert(socket.bind('*', port or '0'))
     local ip, port = s:getsockname()
     logInfo('Definition for "' .. id .. '" bound to "' .. ip .. ':' .. port .. '"')
     return { id = id .. '@' .. port, name = spec.name, ip = ip, port = port, def = def, socket = s, spec = spec }
@@ -344,9 +344,9 @@ function ServantPool:_createNextVersion(id)
     return id .. '#' .. version
 end
 
-function ServantPool:add(def, spec)
+function ServantPool:add(def, spec, port)
     self._builder:validate(def, spec)
-    local instance = self._builder:bind(def, self:_createNextVersion(spec._id), spec)
+    local instance = self._builder:bind(def, self:_createNextVersion(spec._id), spec, port)
     table.insert(self.instances, instance)
     return instance
 end
@@ -376,7 +376,7 @@ function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
 
         s:send(reqStub)
         logInfo('Sent request')
-        local resStub, err = s:recv()
+        local resStub, err = s:receive()
         if err ~= nil then
             logErro('Connection with server failed (' .. err .. ')')
             return nil
@@ -397,7 +397,7 @@ function ProxyFactory:createProxy(ip, port, spec)
     local s = assert(socket.tcp())
     s:connect(ip, port)
     proxy._socket = s
-    for name, method in pairs(spec) do
+    for name, method in pairs(spec.methods) do
         proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
     end
     logInfo('Created proxy to ' .. ip .. ':' .. port .. ' targeting "' .. spec._id .. '"')
@@ -416,7 +416,7 @@ function Awaiter:_run(fn, args)
 end
 
 function Awaiter:_act(instance, s, marshaler)
-    local reqStub, err = s:recv()
+    local reqStub, err = s:receive()
     if err ~= nil then
         logErro('Connection with client failed (' .. err .. ')')
         return false, 'connection issues'
@@ -455,6 +455,7 @@ end
 function Awaiter:_getSockets(instances)
     local sockets = {}
     for _, instance in pairs(instances) do
+        instance.socket:accept()
         table.insert(sockets, instance.socket)
     end
     return sockets
@@ -463,8 +464,8 @@ end
 function Awaiter:waitIncoming(instances, marshaler)
     local sockets = self:_getSockets(instances)
     while true do
-        local awaiters = socket.select(sockets, nil, 0)
-        for i, s in pairs(awaiters) do
+        local selectedSockets = socket.select(sockets)
+        for i, s in pairs(selectedSockets) do
             self:_act(instances[i], s, marshaler)
         end
     end
@@ -487,6 +488,11 @@ return {
 
     waitIncoming = function()
         Awaiter:waitIncoming(ServantPool.instances, Marshaling)
+    end,
+
+    _createServant = function(def, file, port)
+        local spec = InterfaceHandler:consume(file)
+        return ServantPool:add(def, spec, port)
     end,
 
     _interfaceHandler = InterfaceHandler,

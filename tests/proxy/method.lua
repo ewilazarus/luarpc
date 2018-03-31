@@ -13,7 +13,7 @@ local function createSocketMock(recvFn)
     local socketMock = {}
     function socketMock:send(data)
     end
-    function socketMock:recv()
+    function socketMock:receive()
         return recvFn()
     end
     return socketMock
