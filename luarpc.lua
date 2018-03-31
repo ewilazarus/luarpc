@@ -91,9 +91,7 @@ function Marshaling:unmarshalRequest(stub, meta)
             method = segment
         else
             local value = self:_unmarshalSegment(segment, meta.inTypes[count])
-            if value == nil then
-                return false, 'couldn\'t unmarshal client request'
-            end
+            if value == nil then return false, 'couldn\'t unmarshal client request' end
             table.insert(args, value)
         end
         count = count + 1
@@ -127,9 +125,7 @@ function Marshaling:unmarshalResponse(stub, meta)
     count = 1
     for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
         local value = self:_unmarshalSegment(segment, meta.outTypes[count])
-        if value == nil then
-            return false, 'couldn\'t unmarshal server response'
-        end
+        if value == nil then return false, 'couldn\'t unmarshal server response' end
         table.insert(args, value)
         count = count + 1
     end
@@ -396,7 +392,8 @@ LuaRPC._proxyFactory = ProxyFactory
 LuaRPC._marshaling = Marshaling
 
 function LuaRPC:createProxy(ip, port, file)
-    -- TODO: Implement
+    local spec = self._interfaceHandler:consume(file)
+    return self._proxyFactory:createProxy(ip, port, spec)
 end
 
 function LuaRPC:createServant(def, file)
