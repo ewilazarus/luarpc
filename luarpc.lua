@@ -66,6 +66,13 @@ local Marshaling = {}
 
 Marshaling._separator = '|'
 
+function Marshaling:_unmarshalSegment(segment, type)
+    if type == 'double' then
+        return tonumber(segment)
+    end
+    return segment
+end
+
 function Marshaling:marshalRequest(method, args)
     local stub = method
     for _, arg in pairs(args) do
@@ -82,15 +89,12 @@ function Marshaling:unmarshalRequest(stub, meta)
     for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
         if count == 0 then
             method = segment
-        elseif meta.inTypes[count] == 'double' then
-            local val = tonumber(segment)
-            if val ~= nil then
-                table.insert(args, val)
-            else
+        else
+            local value = self:_unmarshalSegment(segment, meta.inTypes[count])
+            if value == nil then
                 return false, 'couldn\'t unmarshal client request'
             end
-        else
-            table.insert(args, segment)
+            table.insert(args, value)
         end
         count = count + 1
     end
@@ -117,24 +121,19 @@ end
 function Marshaling:unmarshalResponse(stub, meta)
     if stringStartsWith(stub, '__ERRORPC: ') then
         return false, 'server responded with "' .. string.sub(stub, 12) .. '"'
-    else
-        local args = {}
-        count = 1
-        for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
-            if meta.outTypes[count] == 'double' then
-                local val = tonumber(segment)
-                if val ~= nil then
-                    table.insert(args, val)
-                else
-                    return false, 'couldn\'t unmarshal server response'
-                end
-            else
-                table.insert(args, segment)
-            end
-            count = count + 1
-        end
-        return true, args
     end
+
+    local args = {}
+    count = 1
+    for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
+        local value = self:_unmarshalSegment(segment, meta.outTypes[count])
+        if value == nil then
+            return false, 'couldn\'t unmarshal server response'
+        end
+        table.insert(args, value)
+        count = count + 1
+    end
+    return true, args
 end
 
 
