@@ -104,13 +104,20 @@ function Marshaling:marshalRequest(method, args)
     return stub
 end
 
-function Marshaling:unmarshalRequest(stub, meta)
-    local method = nil
+function Marshaling:unmarshalRequest(stub, spec)
+    local meta = nil
+    local methodName = nil
     local args = {}
     count = 0
     for segment in string.gmatch(stub, '[^' .. self._separator .. ']+') do
         if count == 0 then
-            method = segment
+            methodName = segment
+            local method = spec.methods[methodName]
+            if method == nil then
+                return false, 'couldn\'t find matching function'
+            else
+                meta = method._meta
+            end
         else
             local value = self:_unmarshalSegment(segment, meta.inTypes[count])
             if value == nil then return false, 'couldn\'t unmarshal client request' end
@@ -121,7 +128,7 @@ function Marshaling:unmarshalRequest(stub, meta)
     if count < #meta.inTypes then
         return false, 'couldn\'t unmarshal client request'
     end
-    return true, method, args
+    return true, methodName, args
 end
 
 function Marshaling:marshalResponse(args)
@@ -402,9 +409,9 @@ end
 local Awaiter = {}
 
 
-function Awaiter:_run(method, args)
+function Awaiter:_run(fn, args)
     return pcall(function()
-        return method(table.unpack(args))
+        return fn(table.unpack(args))
     end)
 end
 
@@ -412,22 +419,37 @@ function Awaiter:_act(instance, s, marshaler)
     local reqStub, err = s:recv()
     if err ~= nil then
         logErro('Connection with client failed (' .. err .. ')')
-        return false
+        return false, 'connection issues'
     end
     logInfo('Received request')
 
-    local success, method, args = marshaler:unmarshalRequest(reqStub, instance.meta)
+    local success, method, args = marshaler:unmarshalRequest(reqStub, instance.spec)
     if not success then
         logErro(method)
-        return false
+
+        local errStub = marshaler:marshalErrorResponse(method)
+        s:send(errStub)
+
+        logInfo('Sent response')
+        return false, method
     end
 
-    local runSuccess, rvs = self:_run(instance.def[method], args)
-    resStub = runSuccess and marshaler:marshalResponse(rvs) or marshaler:marshalErrorResponse(rvs)
-    s:send(resStub)  -- TODO: verificar se tem que tratar erro
-    logInfo('Sent response')
+    local fn = instance.def[method]
 
-    return true
+    local runSuccess, rvs = self:_run(fn, args)
+    if runSuccess then
+        local resStub = marshaler:marshalResponse(table.pack(rvs))
+        s:send(resStub)
+
+        logInfo('Sent response')
+        return true, nil
+    end
+
+    local resStub = marshaler:marshalErrorResponse(rvs)
+    s:send(resStub)  -- TODO: verificar se tem que tratar erro
+
+    logInfo('Sent response')
+    return false, rvs
 end
 
 function Awaiter:_getSockets(instances)

@@ -6,31 +6,98 @@ print('TEST: marshaling unmarshal')
 local marshaler = luarpc._marshaling
 
 
+--
+local spec1 = {
+    methods = {
+        methodName = {
+            _meta = {
+                inTypes = {'string', 'double', 'string'}
+            }
+        }
+    }
+}
+
 function test_canUnmarshalRequest()
-    local success, method, args = marshaler:unmarshalRequest('methodName|astring|1337|anotherstring', {inTypes = {'string', 'double', 'string'}})
+    local success, method, args = marshaler:unmarshalRequest('methodName|astring|1337|anotherstring', spec1)
     lu.assertTrue(success)
     lu.assertEquals(method, 'methodName')
     lu.assertEquals(args, {'astring', 1337, 'anotherstring'})
 end
 
+
+--
+local spec2 = {
+    methods = {
+        methodName = {
+            _meta = {
+                inTypes = {'double', 'double'}
+            }
+        }
+    }
+}
+
 function test_canUnmarshalBadRequest()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', {inTypes = {'double', 'double'}})
+    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', spec2)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
+
+
+--
+local spec3 = {
+    methods = {
+        methodName = {
+            _meta = {
+                inTypes = {'string', 'double', 'char'}
+            }
+        }
+    }
+}
 
 function test_canUnmarshalBadRequest2()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', {inTypes = {'string', 'double', 'char'}})
+    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', spec3)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
+
+
+--
+local spec4 = {
+    methods = {
+        methodName = {
+            _meta = {
+                inTypes = {'string', 'double', 'char'}
+            }
+        }
+    }
+}
 
 function test_canUnmarshalBadRequest3()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234', {inTypes = {'string', 'double', 'char'}})
+    local success, cause = marshaler:unmarshalRequest('methodName|1234', spec4)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
 
+
+--
+local spec5 = {
+    methods = {
+        methodName2 = {
+            _meta = {
+                inTypes = {'string', 'double', 'char'}
+            }
+        }
+    }
+}
+
+function test_canUnmarshalBadRequest3()
+    local success, cause = marshaler:unmarshalRequest('methodName|1234', spec5)
+    lu.assertFalse(success)
+    lu.assertEquals(cause, 'couldn\'t find matching function')
+end
+
+
+--
 function test_canUnmarshalResponse()
     local success, args = marshaler:unmarshalResponse('1337|anotherstring', {outTypes = {'double', 'string'}})
     lu.assertTrue(success)
