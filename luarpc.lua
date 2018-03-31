@@ -118,6 +118,9 @@ function Marshaling:unmarshalRequest(stub, meta)
         end
         count = count + 1
     end
+    if count < #meta.inTypes then
+        return false, 'couldn\'t unmarshal client request'
+    end
     return true, method, args
 end
 
@@ -150,6 +153,9 @@ function Marshaling:unmarshalResponse(stub, meta)
         if value == nil then return false, 'couldn\'t unmarshal server response' end
         table.insert(args, value)
         count = count + 1
+    end
+    if count - 1 < #meta.outTypes then
+        return false, 'couldn\'t unmarshal server response'
     end
     return true, args
 end

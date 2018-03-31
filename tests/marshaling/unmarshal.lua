@@ -19,6 +19,18 @@ function test_canUnmarshalBadRequest()
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
 
+function test_canUnmarshalBadRequest2()
+    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', {inTypes = {'string', 'double', 'char'}})
+    lu.assertFalse(success)
+    lu.assertEquals(cause, 'couldn\'t unmarshal client request')
+end
+
+function test_canUnmarshalBadRequest3()
+    local success, cause = marshaler:unmarshalRequest('methodName|1234', {inTypes = {'string', 'double', 'char'}})
+    lu.assertFalse(success)
+    lu.assertEquals(cause, 'couldn\'t unmarshal client request')
+end
+
 function test_canUnmarshalResponse()
     local success, args = marshaler:unmarshalResponse('1337|anotherstring', {outTypes = {'double', 'string'}})
     lu.assertTrue(success)
@@ -32,6 +44,12 @@ end
 
 function test_canUnmarshalBadResponse()
     local success, cause = marshaler:unmarshalResponse('1337|astring', {outTypes = {'double', 'double'}})
+    lu.assertFalse(success)
+    lu.assertEquals(cause, 'couldn\'t unmarshal server response')
+end
+
+function test_canUnmarshalBadResponse2()
+    local success, cause = marshaler:unmarshalResponse('imnotawake|1234', {outTypes = {'string', 'double', 'char'}})
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal server response')
 end

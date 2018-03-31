@@ -35,6 +35,14 @@ function test_cantValidateWrongReturnType()
     lu.assertErrorMsgContains(errors.S04, run, wrongReturnType, {inTypes = {}, outTypes = {'double'}})
 end
 
+local function wrongReturnType()
+    return 'hello'
+end
+
+function test_cantValidateWrongReturnType2()
+    lu.assertErrorMsgContains(errors.S04, run, wrongReturnType, {inTypes = {}, outTypes = {'char'}})
+end
+
 local function throwsError()
     return error('An error')
 end

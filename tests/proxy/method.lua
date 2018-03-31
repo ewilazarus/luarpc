@@ -90,6 +90,19 @@ function test_cantCreateMethodWithWrongTypes()
 end
 
 --
+local methodMock51 = {
+    inTypes = {'double'},
+    outTypes = {'char'}
+}
+
+local socketMock51 = createSocketMock(function() return 'hello im not a char', nil end)
+
+function test_cantCreateMethodWithWrongTypes()
+local method = createProxyMethod(methodMock51, socketMock51)
+lu.assertErrorMsgContains(errors.P01, method, 'hello im not a char')
+end
+
+--
 local methodMock6 = {
         inTypes = {'double'},
         outTypes = {'double'}
