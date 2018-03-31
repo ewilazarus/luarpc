@@ -28,6 +28,20 @@ errors = {
 
 
 ----------------------------------------------------- HELPERS ---------------------------------------------------------
+local runtimeEnvironment = os.getenv('LUARPC_ENVIRONMENT')
+
+local function log(type)
+    return function(message)
+        if runtimeEnvironment ~= 'test' then
+            print(type .. ': ' .. message)
+        end
+    end
+end
+
+local logInfo = log('INFO')
+local logWarn = log('WARN')
+local logErro = log('ERRO')
+
 local function isType(t)
     return function(value)
         if t == 'char' then
@@ -249,12 +263,14 @@ local ServantBuilderSandbox = {}
 
 ServantBuilderSandbox._inputDefaults = { double = 1, string = 'abc', char = 'c' }
 
-function ServantBuilderSandbox:_createOutputValidators(meta)
-    local validators = {}
-    for _, o in pairs(meta.outTypes) do
-        table.insert(validators, isType(o))
+function ServantBuilderSandbox:_validateOutput(returnValues, meta)
+    for i, otype in pairs(meta.outTypes) do
+        local validate = isType(otype)
+        if not validate(returnValues[i]) then
+            return false
+        end
     end
-    return validators
+    return true
 end
 
 function ServantBuilderSandbox:_createInput(meta)
@@ -265,24 +281,14 @@ function ServantBuilderSandbox:_createInput(meta)
     return input
 end
 
-function ServantBuilderSandbox:_validateOutput(returnValues, outputValidators)
-    for i = 1, #returnValues do
-        if not outputValidators[i](returnValues[i]) then
-            return false
-        end
-    end
-    return true
-end
-
 function ServantBuilderSandbox:run(method, meta)
     local input = self:_createInput(meta)
     local success, returnVals = pcall(function() return {method(table.unpack(input))} end)
     if success then
         assert(#returnVals == #meta.outTypes, errors.S03)
-        local outputValidators = self:_createOutputValidators(meta)
-        assert(self:_validateOutput(returnVals, outputValidators), errors.S04)
+        assert(self:_validateOutput(returnVals, meta), errors.S04)
     else
-        print('WARN: one of the provided definitions might be prone to throw an error')
+        logWarn('One of the provided definitions might be prone to throw an error')
     end
     return true
 end
@@ -307,7 +313,7 @@ end
 function ServantBuilder:bind(def, id, name)
     local s = assert(socket.bind('*', '0'))
     local ip, port = s:getsockname()
-    print('INFO: Definition for "' .. name .. '" bound to "' .. ip .. ':' .. port .. '"')
+    logInfo('Definition for "' .. name .. '" bound to "' .. ip .. ':' .. port .. '"')
     return { id = id .. '@' .. port, name = name, ip = ip, port = port, fn = def }
 end
 
@@ -350,21 +356,21 @@ function ProxyFactory:_cleanArgs(meta, args)
     return args
 end
 
-function ProxyFactory:_createProxyMethodWrapper(name, method, s, marshaler)
+function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
     return function(...)
-        local cleansedArgs = self:_cleanArgs(method._meta, {...})
+        local cleansedArgs = self:_cleanArgs(methodMeta, {...})
         local reqStub = marshaler:marshalRequest(name, cleansedArgs)
 
         s:send(reqStub)
         local resStub, err = s:recv()
         if err ~= nil then
-            print('ERRO: connection with server failed (' .. err .. ')')
+            logErro('Connection with server failed (' .. err .. ')')
             return nil
         end
 
-        local success, rvs = marshaler:unmarshalResponse(resStub, method._meta)
+        local success, rvs = marshaler:unmarshalResponse(resStub, methodMeta)
         if not success then
-            print('ERRO: ' .. rvs)
+            logErro(rvs)
             return nil
         end
         return table.unpack(rvs)
@@ -377,8 +383,9 @@ function ProxyFactory:createProxy(ip, port, spec)
     s:connect(ip, port)
     proxy._socket = s
     for name, method in pairs(spec) do
-        proxy[name] = self:_createProxyMethodWrapper(name, method, s, Marshaling)
+        proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
     end
+    logInfo('Created proxy to ' .. ip .. ':' .. port .. ' targeting "' .. spec._id .. '"')
     return proxy
 end
 

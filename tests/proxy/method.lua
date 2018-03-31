@@ -5,8 +5,8 @@ print('TEST: proxy method')
 
 local factory = luarpc._proxyFactory
 
-local function createProxyMethod(method, socket)
-    return factory:_createProxyMethodWrapper('test', method, socket, luarpc._marshaling)
+local function createProxyMethod(meta, socket)
+    return factory:_createProxyMethodWrapper('test', meta, socket, luarpc._marshaling)
 end
 
 local function createSocketMock(recvFn)
@@ -21,11 +21,9 @@ end
 
 --
 local methodMock1 = {
-    _meta = {
         inTypes = {'double', 'double'},
         outTypes = {'double'}
     }
-}
 
 local socketMock1 = createSocketMock(function() return '42', nil end)
 
@@ -37,10 +35,8 @@ end
 
 --
 local methodMock2 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double', 'double'}
-    }
 }
 
 local socketMock2 = createSocketMock(function() return '13|37', nil end)
@@ -54,10 +50,8 @@ end
 
 --
 local methodMock3 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double'}
-    }
 }
 
 local socketMock3 = createSocketMock(function() return '42', nil end)
@@ -70,10 +64,8 @@ end
 
 --
 local methodMock4 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double'}
-    }
 }
 
 local socketMock4 = createSocketMock(function() return '42', nil end)
@@ -86,10 +78,8 @@ end
 
 --
 local methodMock5 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double'}
-    }
 }
 
 local socketMock5 = createSocketMock(function() return '42', nil end)
@@ -101,10 +91,8 @@ end
 
 --
 local methodMock6 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double'}
-    }
 }
 
 local socketMock6 = createSocketMock(function() return nil, 'timeout' end)
@@ -117,10 +105,8 @@ end
 
 --
 local methodMock7 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double'}
-    }
 }
 
 local socketMock7 = createSocketMock(function() return '__ERRORPC: estou com fome', nil end)
@@ -133,10 +119,8 @@ end
 
 --
 local methodMock8 = {
-    _meta = {
         inTypes = {'double'},
         outTypes = {'double', 'string', 'double', 'char'}
-    }
 }
 
 local socketMock8 = createSocketMock(function() return '13|mcdonalds|37|s', nil end)

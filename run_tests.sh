@@ -4,6 +4,10 @@
 export LUA_PATH="$LUA_PATH;./.rocks/share/lua/5.3/?.lua;./?.lua"
 export LUA_CPATH="$LUA_CPATH;./.rocks/lib/lua/5.3/?.so"
 
+# Exports environment
+export LUARPC_ENVIRONMENT='test'
+
+
 if [ $# -eq 0 ]; then
     find tests -type f -exec lua {} \;
     exit 0
