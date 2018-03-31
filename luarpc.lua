@@ -469,13 +469,10 @@ function Awaiter:waitIncoming(instances, marshaler)
     local sockets = self:_getSockets(instances)
     while true do
         local recvt, sendt, err = socket.select(sockets, nil, 1)
-        print('recvt', #recvt)
-        print('sendt', #sendt)
-        print('err', err)
-
         for i, s in pairs(recvt) do
             local c = s:accept()
             self:_act(instances[i], c, marshaler)
+            break
         end
     end
 end
