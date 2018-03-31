@@ -13,7 +13,7 @@ end
 function test_canRunMethod()
     local success, result = awaiter:_run(f1, {'boi', 'tata'})
     lu.assertTrue(success)
-    lu.assertEquals(result, 'boi tata')
+    lu.assertEquals(result, {'boi tata'})
 end
 
 local function f2(s1, s2)
@@ -21,20 +21,19 @@ local function f2(s1, s2)
 end
 
 function test_canRunMethod2()
-    local success, r1, r2 = awaiter:_run(f2, {'boi', 'tata'})
+    local success, r1 = awaiter:_run(f2, {'boi', 'tata'})
     lu.assertTrue(success)
-    lu.assertEquals(r1, 'boi tata')
-    lu.assertEquals(r2, 1337)
+    lu.assertEquals(r1, {'boi tata', 1337})
 end
 
 local function f3()
     return 'hello world'
 end
 
-function test_canRunMethod3()
+function test_canRunMethod4()
     local success, r1 = awaiter:_run(f3, {})
     lu.assertTrue(success)
-    lu.assertEquals(r1, 'hello world')
+    lu.assertEquals(r1, {'hello world'})
 end
 
 local function f4()

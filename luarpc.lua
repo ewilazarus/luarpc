@@ -399,7 +399,7 @@ function ProxyFactory:createProxy(ip, port, spec)
     local proxy = {}
     local s = assert(socket.tcp())
     s:connect(ip, port)
-    -- proxy._socket = s
+    s:setoption('keepalive', true)
     for name, method in pairs(spec.methods) do
         proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
     end
@@ -414,7 +414,7 @@ local Awaiter = {}
 
 function Awaiter:_run(fn, args)
     return pcall(function()
-        return fn(table.unpack(args))
+        return {fn(table.unpack(args))}
     end)
 end
 
@@ -441,7 +441,7 @@ function Awaiter:_act(instance, s, marshaler)
 
     local runSuccess, rvs = self:_run(fn, args)
     if runSuccess then
-        local resStub = marshaler:marshalResponse(table.pack(rvs))
+        local resStub = marshaler:marshalResponse(rvs)
         s:send(resStub)
 
         logInfo('Sent response')
@@ -458,7 +458,8 @@ end
 function Awaiter:_getSockets(instances)
     local sockets = {}
     for _, instance in pairs(instances) do
-        instance.socket:accept()
+        instance.socket:settimeout(1)
+        instance.socket:setoption('keepalive', true)
         table.insert(sockets, instance.socket)
     end
     return sockets
@@ -467,9 +468,14 @@ end
 function Awaiter:waitIncoming(instances, marshaler)
     local sockets = self:_getSockets(instances)
     while true do
-        local selectedSockets = socket.select(sockets)
-        for i, s in pairs(selectedSockets) do
-            self:_act(instances[i], s, marshaler)
+        local recvt, sendt, err = socket.select(sockets, nil, 1)
+        print('recvt', #recvt)
+        print('sendt', #sendt)
+        print('err', err)
+
+        for i, s in pairs(recvt) do
+            local c = s:accept()
+            self:_act(instances[i], c, marshaler)
         end
     end
 end
