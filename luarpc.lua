@@ -313,11 +313,7 @@ ServantPool.instances = {}
 
 function ServantPool:_createNextVersion(id)
     local version = self._instanceCatalog[id]
-    if version == nil then
-        version = 1
-    else
-        version = version + 1
-    end
+    version = version == nil and 1 or version + 1
     self._instanceCatalog[id] = version
     return id .. '#' .. version
 end
@@ -337,11 +333,11 @@ ProxyFactory._defaultInputTypes = { double = 1, char = 'c', string = 'string' }
 ProxyFactory._inputTypeAdapters = { double = 'number', char = 'string', string = 'string' }
 
 function ProxyFactory:_cleanArgs(meta, args)
-    for i, itype in pairs(meta) do
+    for i, itype in pairs(meta.inTypes) do
         if args[i] == nil then
             args[i] = self._defaultInputTypes[itype]
         else
-            local validate = hasType(self._inputTypeAdapters[itype])
+            local validate = isType(self._inputTypeAdapters[itype])
             assert(validate(args[i]), errors.P01)
         end
     end
@@ -350,7 +346,7 @@ end
 
 function ProxyFactory:_createProxyMethodWrapper(name, method, s, marshaler)
     return function(...)
-        local cleansedArgs = self:_cleanArgs(method._meta, arg)
+        local cleansedArgs = self:_cleanArgs(method._meta, {...})
         local reqStub = marshaler:marshalRequest(name, cleansedArgs)
 
         s:send(reqStub)
@@ -360,7 +356,7 @@ function ProxyFactory:_createProxyMethodWrapper(name, method, s, marshaler)
             return nil
         end
 
-        local success, rvs = marshaler:unmarshalResponse(resStub)
+        local success, rvs = marshaler:unmarshalResponse(resStub, method._meta)
         if not success then
             print('ERRO: ' .. rvs)
             return nil
