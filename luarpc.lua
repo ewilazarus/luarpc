@@ -377,7 +377,7 @@ function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
         local cleansedArgs = self:_cleanArgs(methodMeta, {...})
         local reqStub = marshaler:marshalRequest(name, cleansedArgs)
 
-        s:send(reqStub)
+        bla, err = s:send(reqStub)
         logInfo('Sent request')
         local resStub, err = s:receive()
         if err ~= nil then
@@ -399,7 +399,8 @@ function ProxyFactory:createProxy(ip, port, spec)
     local proxy = {}
     local s = assert(socket.tcp())
     s:connect(ip, port)
-    s:setoption('keepalive', true)
+    -- s:setoption('keepalive', true)
+    s:settimeout(5)
     for name, method in pairs(spec.methods) do
         proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
     end
@@ -421,8 +422,8 @@ end
 function Awaiter:_act(instance, s, marshaler)
     local reqStub, err = s:receive()
     if err ~= nil then
-        logErro('Connection with client failed (' .. err .. ')')
-        return false, 'connection issues'
+        logWarn('Interrupted connection with client (' .. err .. ')')
+        return false, err
     end
     logInfo('Received request')
 
@@ -434,7 +435,7 @@ function Awaiter:_act(instance, s, marshaler)
         s:send(errStub)
 
         logInfo('Sent response')
-        return false, method
+        return true, method
     end
 
     local fn = instance.def[method]
@@ -452,14 +453,14 @@ function Awaiter:_act(instance, s, marshaler)
     s:send(resStub)  -- TODO: verificar se tem que tratar erro
 
     logInfo('Sent response')
-    return false, rvs
+    return true, rvs
 end
 
 function Awaiter:_getSockets(instances)
     local sockets = {}
     for _, instance in pairs(instances) do
         instance.socket:settimeout(1)
-        instance.socket:setoption('keepalive', true)
+        -- instance.socket:setoption('keepalive', true)
         table.insert(sockets, instance.socket)
     end
     return sockets
@@ -467,12 +468,23 @@ end
 
 function Awaiter:waitIncoming(instances, marshaler)
     local sockets = self:_getSockets(instances)
+    local listeners = {}
+
     while true do
+        -- checks if there is a new connection
         local recvt, sendt, err = socket.select(sockets, nil, 1)
-        for i, s in pairs(recvt) do
-            local c = s:accept()
-            self:_act(instances[i], c, marshaler)
-            break
+        for i, s in ipairs(recvt) do
+            local listener = s:accept()
+            table.insert(listeners, listener)
+        end
+
+        -- acts on open connections
+        local recvtl, _, err = socket.select(listeners, nil, 1)
+        for i, listener in ipairs(recvtl) do
+            ok = self:_act(instances[i], listener, marshaler)
+            if not ok then
+                listener:close()
+            end
         end
     end
 end

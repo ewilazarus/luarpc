@@ -68,9 +68,9 @@ local instance2 = {
 
 local socketMock2 = createSocketMock(function() return 'fn1|123|alou', nil end)
 
-function test_cantActOnNonExistentFunction()
+function test_canActOnNonExistentFunction()
     local result, cause = act(instance2, socketMock2)
-    lu.assertFalse(result)
+    lu.assertTrue(result)
 end
 
 
@@ -95,9 +95,9 @@ local instance3 = {
 
 local socketMock3 = createSocketMock(function() return 'fn1|123|alou', nil end)
 
-function test_cantActOnErrorFunction()
+function test_canActOnErrorFunction()
     local result, cause = act(instance3, socketMock3)
-    lu.assertFalse(result)
+    lu.assertTrue(result)
 end
 
 
