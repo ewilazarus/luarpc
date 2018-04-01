@@ -10,9 +10,18 @@ Must have the Lua interpreter installed and available in the `$PATH`
 
 ## Usage
 
+* To run the sample server:
+
 ```
-./run.sh
+./run_sample.sh server
 ```
+
+* To run the sample client:
+
+```
+./run_sample.sh client
+```
+
 
 ## Author
 
