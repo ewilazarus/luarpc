@@ -399,7 +399,6 @@ function ProxyFactory:createProxy(ip, port, spec)
     local proxy = {}
     local s = assert(socket.tcp())
     s:connect(ip, port)
-    -- s:setoption('keepalive', true)
     s:settimeout(5)
     for name, method in pairs(spec.methods) do
         proxy[name] = self:_createProxyMethodWrapper(name, method._meta, s, Marshaling)
@@ -458,32 +457,37 @@ end
 
 function Awaiter:_getSockets(instances)
     local sockets = {}
+    local instanceMap = {}
     for _, instance in pairs(instances) do
         instance.socket:settimeout(1)
-        -- instance.socket:setoption('keepalive', true)
         table.insert(sockets, instance.socket)
+        instanceMap[instance.socket] = instance
     end
-    return sockets
+    return sockets, instanceMap
 end
 
 function Awaiter:waitIncoming(instances, marshaler)
-    local sockets = self:_getSockets(instances)
+    local sockets, instanceSocketMap = self:_getSockets(instances)
+    local instanceMap = {}
     local listeners = {}
 
     while true do
         -- checks if there is a new connection
         local recvt, sendt, err = socket.select(sockets, nil, 1)
-        for i, s in ipairs(recvt) do
+        for _, s in ipairs(recvt) do
             local listener = s:accept()
             table.insert(listeners, listener)
+            local instance = instanceSocketMap[s]
+            instanceMap[listener] = instance
         end
 
         -- acts on open connections
         local recvtl, _, err = socket.select(listeners, nil, 1)
-        for i, listener in ipairs(recvtl) do
-            ok = self:_act(instances[i], listener, marshaler)
-            if not ok then
+        for _, listener in ipairs(recvtl) do
+            ok, cause = self:_act(instanceMap[listener], listener, marshaler)
+            if not ok and cause == 'closed' then
                 listener:close()
+                instanceMap[listener] = nil
             end
         end
     end

@@ -37,6 +37,5 @@ local madDef = {
 }
 
 luarpc._createServant(def, 'sample/calculator.idl', '8000')
-luarpc._createServant(def, 'sample/calculator.idl', '8001')
-luarpc._createServant(madDef, 'sample/calculator.idl', '8002')
+luarpc._createServant(madDef, 'sample/calculator.idl', '8001')
 luarpc.waitIncoming()
