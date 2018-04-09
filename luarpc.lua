@@ -102,9 +102,18 @@ function Marshaling:_decode(string)
     return stringReplace(string, encodedSeparator, self._separator)
 end
 
+function Marshaling:_marshalSegment(segment)
+    if isString(segment) then
+        return self:_encode(segment)
+    end
+    return segment
+end
+
 function Marshaling:_unmarshalSegment(segment, type)
     if type == 'double' then
         return tonumber(segment)
+    elseif type == 'string' or type == 'char' then
+        return self:_decode(segment)
     end
     return segment
 end
@@ -112,7 +121,7 @@ end
 function Marshaling:marshalRequest(method, args)
     local stub = method
     for _, arg in pairs(args) do
-        stub = stub .. self._separator .. arg
+        stub = stub .. self._separator .. self:_marshalSegment(arg)
     end
     return stub .. '\n'
 end
@@ -150,14 +159,14 @@ function Marshaling:marshalResponse(args)
         if i == 1 then
             stub = stub .. arg
         else
-            stub = stub .. self._separator .. arg
+            stub = stub .. self._separator .. self:_marshalSegment(arg)
         end
     end
     return stub .. '\n'
 end
 
 function Marshaling:marshalErrorResponse(cause)
-    return '__ERRORPC: ' .. cause .. '\n'
+    return '__ERRORPC: ' .. self:_encode(cause) .. '\n'
 end
 
 function Marshaling:unmarshalResponse(stub, meta)
