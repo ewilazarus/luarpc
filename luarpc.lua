@@ -162,7 +162,7 @@ end
 
 function Marshaling:unmarshalResponse(stub, meta)
     if stringStartsWith(stub, '__ERRORPC: ') then
-        return false, 'server responded with "' .. string.sub(stub, 12) .. '"'
+        return false, string.sub(stub, 12)
     end
 
     local args = {}
@@ -394,16 +394,15 @@ function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
         local resStub, err = s:receive()
         if err ~= nil then
             logErro('Connection with server failed (' .. err .. ')')
-            return nil
+            return err
         end
         logInfo('Received response')
 
         local success, rvs = marshaler:unmarshalResponse(resStub, methodMeta)
         if not success then
-            logErro(rvs)
-            return nil
+            return rvs
         end
-        return table.unpack(rvs)
+        return nil, table.unpack(rvs)
     end
 end
 

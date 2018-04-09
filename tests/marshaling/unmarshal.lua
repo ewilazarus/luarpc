@@ -124,7 +124,7 @@ end
 function test_canUnmarshalErrorResponse()
     local success, cause = marshaler:unmarshalResponse('__ERRORPC: ocorreu um erro', {outTypes = {'double', 'string'}})
     lu.assertFalse(success)
-    lu.assertEquals(cause, 'server responded with "ocorreu um erro"')
+    lu.assertEquals(cause, 'ocorreu um erro')
 end
 
 
