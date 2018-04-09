@@ -132,7 +132,7 @@ local socketMock7 = createSocketMock(function() return '__ERRORPC: estou com fom
 function test_canCreateMethodWithServerError()
     local method = createProxyMethod(methodMock7, socketMock7)
     local err, result = method(43)
-    lu.assertEquals(err, 'estou com fome')
+    lu.assertEquals(err, 'estou com fome\n')
     lu.assertIsNil(result)
 end
 

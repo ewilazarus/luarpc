@@ -39,7 +39,7 @@ local instance1 = {
     }
 }
 
-local socketMock1 = createSocketMock(function() return 'fn1|123|alou', nil end)
+local socketMock1 = createSocketMock(function() return 'fn1\n123\nalou', nil end)
 
 function test_canAct()
     local result, cause = act(instance1, socketMock1)
@@ -66,7 +66,7 @@ local instance2 = {
     }
 }
 
-local socketMock2 = createSocketMock(function() return 'fn1|123|alou', nil end)
+local socketMock2 = createSocketMock(function() return 'fn1\n123\nalou', nil end)
 
 function test_canActOnNonExistentFunction()
     local result, cause = act(instance2, socketMock2)
@@ -93,7 +93,7 @@ local instance3 = {
     }
 }
 
-local socketMock3 = createSocketMock(function() return 'fn1|123|alou', nil end)
+local socketMock3 = createSocketMock(function() return 'fn1\n123\nalou', nil end)
 
 function test_canActOnErrorFunction()
     local result, cause = act(instance3, socketMock3)

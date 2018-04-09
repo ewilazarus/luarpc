@@ -114,7 +114,7 @@ function Marshaling:marshalRequest(method, args)
     for _, arg in pairs(args) do
         stub = stub .. self._separator .. arg
     end
-    return stub
+    return stub .. '\n'
 end
 
 function Marshaling:unmarshalRequest(stub, spec)
@@ -153,11 +153,11 @@ function Marshaling:marshalResponse(args)
             stub = stub .. self._separator .. arg
         end
     end
-    return stub
+    return stub .. '\n'
 end
 
 function Marshaling:marshalErrorResponse(cause)
-    return '__ERRORPC: ' .. cause
+    return '__ERRORPC: ' .. cause .. '\n'
 end
 
 function Marshaling:unmarshalResponse(stub, meta)
@@ -391,10 +391,19 @@ function ProxyFactory:_createProxyMethodWrapper(name, methodMeta, s, marshaler)
 
         bla, err = s:send(reqStub)
         logInfo('Sent request')
-        local resStub, err = s:receive()
-        if err ~= nil then
-            logErro('Connection with server failed (' .. err .. ')')
-            return err
+
+        local resStub = ''
+        for i = 1, #methodMeta.outTypes do
+            rv, err = s:receive()
+            if err ~= nil then
+                logErro('Connection with server failed (' .. err .. ')')
+                return err
+            end
+
+            resStub = resStub .. rv .. '\n'
+            if stringStartsWith(rv, '__ERRORPC: ') then
+                break
+            end
         end
         logInfo('Received response')
 
@@ -430,11 +439,32 @@ function Awaiter:_run(fn, args)
 end
 
 function Awaiter:_act(instance, s, marshaler)
-    local reqStub, err = s:receive()
+    local methodName, err = s:receive()
+    logInfo('Received method name')
+
     if err ~= nil then
         logWarn('Interrupted connection with client (' .. err .. ')')
         return false, err
     end
+
+    local instanceMethod = instance.spec.methods[methodName]
+    if instanceMethod == nil then
+        local err = 'Couldn\'t find a matching method for "' .. methodName .. '"'
+        logWarn(err)
+        return false, err
+    end
+
+    local reqStub = methodName
+    for i = 1, #instanceMethod._meta.inTypes do
+        local param, err = s:receive()
+        if err ~= nil then
+            logWarn('Interrupted connection with client (' .. err .. ')')
+            return false, err
+        end
+        logInfo('Received method parameter')
+        reqStub = reqStub .. '\n' .. param
+    end
+
     logInfo('Received request')
 
     local success, method, args = marshaler:unmarshalRequest(reqStub, instance.spec)

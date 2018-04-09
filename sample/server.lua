@@ -14,7 +14,7 @@ local def = {
         return a - b
     end,
     magic = function(a, b)
-        return 'here you go!', a + b, a * b, a / b, a -b
+        return 'here you go!', a + b, a * b, a / b, a - b
     end
 }
 
