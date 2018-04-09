@@ -7,23 +7,23 @@ local marshaler = luarpc._marshaling
 
 
 function test_canMarshalRequest()
-    lu.assertEquals(marshaler:marshalRequest('methodName', {'astring', 1337, 'anotherstring'}), 'methodName|astring|1337|anotherstring\n')
+    lu.assertEquals(marshaler:marshalRequest('methodName', {'astring', 1337, 'anotherstring'}), 'methodName\nastring\n1337\nanotherstring')
 end
 
 function test_canMarshalResponse()
-    lu.assertEquals(marshaler:marshalResponse({44, 'success'}), '44|success\n')
+    lu.assertEquals(marshaler:marshalResponse({44, 'success'}), '44\nsuccess')
 end
 
 function test_canMarshalResponse2()
-    lu.assertEquals(marshaler:marshalResponse({44}), '44\n')
+    lu.assertEquals(marshaler:marshalResponse({44}), '44')
 end
 
 function test_canMarshalResponse3()
-    lu.assertEquals(marshaler:marshalResponse({}), '\n')
+    lu.assertEquals(marshaler:marshalResponse({}), '')
 end
 
 function test_canMarshalErrorResponse()
-    lu.assertEquals(marshaler:marshalErrorResponse('ocorreu um erro'), '__ERRORPC: ocorreu um erro\n')
+    lu.assertEquals(marshaler:marshalErrorResponse('ocorreu um erro'), '__ERRORPC: ocorreu um erro')
 end
 
 

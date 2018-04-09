@@ -32,10 +32,11 @@ local madDef = {
         return a + b
     end,
     magic = function(a, b)
-        return 'here you go! MWAHMWAHMWAH', a - b, a / b, a * b, a + b
+        return error('unexpected error')
     end
 }
 
 luarpc._createServant(def, 'sample/calculator.idl', '8000')
 luarpc._createServant(madDef, 'sample/calculator.idl', '8001')
+luarpc._createServant(def, 'sample/calculator.idl', '8002')
 luarpc.waitIncoming()

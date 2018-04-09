@@ -18,7 +18,7 @@ local spec1 = {
 }
 
 function test_canUnmarshalRequest()
-    local success, method, args = marshaler:unmarshalRequest('methodName|astring|1337|anotherstring', spec1)
+    local success, method, args = marshaler:unmarshalRequest('methodName\nastring\n1337\nanotherstring', spec1)
     lu.assertTrue(success)
     lu.assertEquals(method, 'methodName')
     lu.assertEquals(args, {'astring', 1337, 'anotherstring'})
@@ -37,7 +37,7 @@ local spec2 = {
 }
 
 function test_canUnmarshalBadRequest()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', spec2)
+    local success, cause = marshaler:unmarshalRequest('methodName\n1234\nasdf', spec2)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
@@ -55,7 +55,7 @@ local spec3 = {
 }
 
 function test_canUnmarshalBadRequest2()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234|asdf', spec3)
+    local success, cause = marshaler:unmarshalRequest('methodName\n1234\nasdf', spec3)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
@@ -73,7 +73,7 @@ local spec4 = {
 }
 
 function test_canUnmarshalBadRequest3()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234', spec4)
+    local success, cause = marshaler:unmarshalRequest('methodName\n1234', spec4)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal client request')
 end
@@ -91,7 +91,7 @@ local spec5 = {
 }
 
 function test_canUnmarshalBadRequest3()
-    local success, cause = marshaler:unmarshalRequest('methodName|1234', spec5)
+    local success, cause = marshaler:unmarshalRequest('methodName\n1234', spec5)
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t find matching function')
 end
@@ -99,7 +99,7 @@ end
 
 --
 function test_canUnmarshalResponse()
-    local success, args = marshaler:unmarshalResponse('1337|anotherstring', {outTypes = {'double', 'string'}})
+    local success, args = marshaler:unmarshalResponse('1337\nanotherstring', {outTypes = {'double', 'string'}})
     lu.assertTrue(success)
     lu.assertEquals(args, {1337, 'anotherstring'})
 end
@@ -110,13 +110,13 @@ function test_canUnmarshalResponse2()
 end
 
 function test_canUnmarshalBadResponse()
-    local success, cause = marshaler:unmarshalResponse('1337|astring', {outTypes = {'double', 'double'}})
+    local success, cause = marshaler:unmarshalResponse('1337\nastring', {outTypes = {'double', 'double'}})
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal server response')
 end
 
 function test_canUnmarshalBadResponse2()
-    local success, cause = marshaler:unmarshalResponse('imnotawake|1234', {outTypes = {'string', 'double', 'char'}})
+    local success, cause = marshaler:unmarshalResponse('imnotawake\n1234', {outTypes = {'string', 'double', 'char'}})
     lu.assertFalse(success)
     lu.assertEquals(cause, 'couldn\'t unmarshal server response')
 end

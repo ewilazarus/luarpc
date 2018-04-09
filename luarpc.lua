@@ -28,11 +28,11 @@ errors = {
 
 
 ----------------------------------------------------- HELPERS ---------------------------------------------------------
-local runtimeEnvironment = os.getenv('LUARPC_ENVIRONMENT')
+local runtimeVerbosity = os.getenv('LUARPC_VERBOSITY')
 
 local function log(type)
     return function(message)
-        if runtimeEnvironment ~= 'test' then
+        if runtimeVerbosity == 'true' then
             print(type .. ': ' .. message)
         end
     end
@@ -82,11 +82,25 @@ local function stringStartsWith(s, start)
     return string.sub(s, 1, string.len(start)) == start
 end
 
+local function stringReplace(string, substring, newstring)
+    return string:gsub('(' .. substring .. ')', newstring)
+end
+
 
 --------------------------------------------------- MARSHALING --------------------------------------------------------
 local Marshaling = {}
 
-Marshaling._separator = '|'
+Marshaling._separator = '\n'
+
+function Marshaling:_encode(string)
+    local encodedSeparator = '\\:-)\\'
+    return stringReplace(string, self._separator, encodedSeparator)
+end
+
+function Marshaling:_decode(string)
+    local encodedSeparator = '\\%:%-%)\\'
+    return stringReplace(string, encodedSeparator, self._separator)
+end
 
 function Marshaling:_unmarshalSegment(segment, type)
     if type == 'double' then
@@ -100,7 +114,6 @@ function Marshaling:marshalRequest(method, args)
     for _, arg in pairs(args) do
         stub = stub .. self._separator .. arg
     end
-    stub = stub .. '\n'
     return stub
 end
 
@@ -140,12 +153,11 @@ function Marshaling:marshalResponse(args)
             stub = stub .. self._separator .. arg
         end
     end
-    stub = stub .. '\n'
     return stub
 end
 
 function Marshaling:marshalErrorResponse(cause)
-    return '__ERRORPC: ' .. cause .. '\n'
+    return '__ERRORPC: ' .. cause
 end
 
 function Marshaling:unmarshalResponse(stub, meta)
